@@ -6,6 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from pydantic import BaseModel
 from openai import OpenAI
+from fastapi.responses import FileResponse
 import re
 import json
 import os
@@ -104,6 +105,9 @@ except Exception:
 # 🚀 FASTAPI
 # -----------------------------------------
 app = FastAPI(title="Python Learning Platform")
+@app.get("/")
+async def home():
+    return FileResponse("дипломка/index.html")
 
 # Раздача HTML/JS/CSS
 # app.mount("/", StaticFiles(directory="static", html=True), name="static")
