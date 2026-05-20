@@ -105,10 +105,10 @@ except Exception:
 # 🚀 FASTAPI
 # -----------------------------------------
 app = FastAPI(title="Python Learning Platform")
-app.mount("/static", StaticFiles(directory="дипломка", html=True), name="static")
+app.mount("/static", StaticFiles(directory="дипломка"), name="static")
 @app.get("/")
 async def home():
-    return FileResponse("index.html")
+    return FileResponse("дипломка/index.html")
 
 # Раздача HTML/JS/CSS
 # app.mount("/", StaticFiles(directory="static", html=True), name="static")
