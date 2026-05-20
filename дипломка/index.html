@@ -203,7 +203,7 @@
           if (mode === 'register') {
             // регистрация
             const res = await fetch(
-              `http://127.0.0.1:8000/add_user/?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&role=${encodeURIComponent(selectedRole)}`,
+              `https://python-learning-platform-1.onrender.com/add_user/?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&role=${encodeURIComponent(selectedRole)}`,
               { method: 'POST' }
             );
             if (!res.ok) {
@@ -232,7 +232,7 @@
               return;
             }
 
-            const res = await fetch(`http://127.0.0.1:8000/check_user/?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}`);
+            const res = await fetch(`https://python-learning-platform-1.onrender.com/check_user/?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}`);
             if (!res.ok) {
               modalInfo.textContent = 'Ошибка проверки: сервер вернул ' + res.status;
               return;
