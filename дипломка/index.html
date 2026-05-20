@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="kk">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Python Learning — Басты бет</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
+</head>
+
+<body>
+
+  <header>
+    <h1>Python Learning</h1>
+    <div class="header-right">
+      <nav>
+        <a href="index.html">Басты бет</a>
+        <a href="materials.html">Материалдар</a>
+        <a href="practice.html">Практика</a>
+        <a href="playground.html">Песочница</a>
+        <a href="results.html">Нәтижелер</a>
+      </nav>
+      <button id="authBtn" class="auth-btn">Кіру / Тіркелу</button>
+      <div id="profileWrapper" class="profile-wrapper">
+        <button id="profileBtn" class="profile-btn">U</button>
+        <div id="profileMenu" class="profile-menu">
+          <div class="profile-menu-item" data-action="edit">
+            <span class="label">Аккаунтты өзгерту</span>
+            <span class="hint">Аты, рөлі</span>
+          </div>
+          <div class="profile-menu-item" data-action="logout">
+            <span cl
+            ass="label">Аккаунттан шығу</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <h2>Python тілін оңай үйрен</h2>
+    <p class="lead">Интерактивті сабақтар, тесттер, тапсырмалар генерациясы және онлайн компилятор арқылы Python бағдарламалауын меңгер.</p>
+
+    <div id="welcome" style="margin-top:18px;font-size:18px;color:#cfeff0"></div>
+
+    <!-- Кнопка, которая появляется после входа — пользователь сам решает когда идти к материалам -->
+    <button id="startLearning" class="start-btn" style="display:none">Оқуды бастау</button>
+    <section class="home-calendar">
+  <div class="calendar-head">
+    <button id="prevMonth">‹</button>
+    <h3 id="monthTitle">Күнтізбе</h3>
+    <button id="nextMonth">›</button>
+  </div>
+
+  <div class="weekdays">
+    <span>ДС</span><span>СС</span><span>СР</span><span>БС</span><span>ЖМ</span><span>СБ</span><span>ЖС</span>
+  </div>
+
+  <div id="calendarGrid" class="calendar-grid"></div>
+
+  <div class="note-box">
+    <h4 id="selectedDateTitle">Күн таңдаңыз</h4>
+    <textarea id="noteText" placeholder="Оқу жоспарыңызды жазыңыз..."></textarea>
+    <button id="saveNote">Сақтау</button>
+  </div>
+</section>
+  </main>
+
+  <!-- Modal -->
+  <div id="loginModal" role="dialog" aria-modal="true">
+    <div class="modal-box">
+      <h3 id="formTitle">Кіру</h3>
+      <p id="formSubtitle" class="modal-subtitle">Жүйеге кіру үшін мәліметтерді енгізіңіз.</p>
+
+      <div class="form-field">
+        <label for="username">Пайдаланушы аты</label>
+        <input id="username" type="text" placeholder="Мысалы, student01" />
+      </div>
+
+      <div class="form-field">
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="example@mail.com" />
+      </div>
+
+      <div class="form-field role-block">
+        <span>Рөл</span>
+        <div class="role-options">
+          <label class="role-option">
+            <input type="radio" name="role" value="student" checked>
+            <span>Мен оқушы</span>
+          </label>
+          <label class="role-option">
+            <input type="radio" name="role" value="teacher">
+            <span>Мен мұғалім</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-row">
+        <button id="submitForm" class="btn-primary">Кіру</button>
+        <button id="closeModal" class="auth-btn btn-secondary">Бас тарту</button>
+      </div>
+      <div style="margin-top:10px;text-align:center">
+        <span id="switchMode" class="link">Аккаунт жоқ па? Тіркелу(</span>
+      </div>
+      <div id="modalInfo" style="margin-top:8px;color:#bfeadf;font-size:13px"></div>
+    </div>
+  </div>
+
+  <footer>© 2025 Python Learning Platform • Python бағдарламалау платформасы</footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const authBtn = document.getElementById('authBtn');
+      const modal = document.getElementById('loginModal');
+      const submitForm = document.getElementById('submitForm');
+      const closeModal = document.getElementById('closeModal');
+      const switchMode = document.getElementById('switchMode');
+      const formTitle = document.getElementById('formTitle');
+      const formSubtitle = document.getElementById('formSubtitle');
+      const usernameInput = document.getElementById('username');
+      const emailInput = document.getElementById('email');
+      const welcome = document.getElementById('welcome');
+      const startBtn = document.getElementById('startLearning');
+      const modalInfo = document.getElementById('modalInfo');
+      const roleInputs = document.getElementsByName('role');
+      const profileWrapper = document.getElementById('profileWrapper');
+      const profileBtn = document.getElementById('profileBtn');
+
+      let mode = 'login'; // 'login' или 'register'
+
+      const roleBlock = document.querySelector('.role-block');
+      if (roleBlock) {
+        roleBlock.style.display = 'none'; // при входе выбор роли не нужен
+      }
+
+      function updateUI() {
+        const user = localStorage.getItem('username');
+        const role = localStorage.getItem('role') || 'student';
+        if (user) {
+          const roleLabel = role === 'teacher' ? 'преподаватель' : 'ученик';
+          welcome.textContent = `Привет, ${user}! (${roleLabel})`;
+          authBtn.style.display = 'none';
+          profileWrapper.style.display = 'flex';
+          const initial = user.trim().charAt(0).toUpperCase() || 'U';
+          profileBtn.textContent = initial;
+          startBtn.style.display = 'inline-block';
+          startBtn.textContent = role === 'teacher'
+            ? 'Перейти в панель преподавателя'
+            : 'Начать обучение (Материалы)';
+        } else {
+          welcome.textContent = '';
+          authBtn.textContent = 'Войти / Регистрация';
+          authBtn.style.display = 'inline-block';
+          profileWrapper.style.display = 'none';
+          startBtn.style.display = 'none';
+        }
+      }
+
+      // Открытие/выход
+      authBtn.addEventListener('click', () => {
+        modal.style.display = 'flex';
+        modalInfo.textContent = '';
+        usernameInput.focus();
+      });
+
+      closeModal.addEventListener('click', () => { modal.style.display = 'none'; });
+
+      // Переключение режима
+      switchMode.addEventListener('click', () => {
+        if (mode === 'login') {
+          mode = 'register';
+          formTitle.textContent = 'Регистрация';
+          formSubtitle.textContent = 'Заполните данные для регистрации.';
+          submitForm.textContent = 'Зарегистрироваться';
+          switchMode.textContent = 'Уже есть аккаунт? Войти';
+          if (roleBlock) roleBlock.style.display = 'block'; // при регистрации показываем выбор роли
+        } else {
+          mode = 'login';
+          formTitle.textContent = 'Вход';
+          formSubtitle.textContent = 'Введите данные для входа.';
+          submitForm.textContent = 'Войти';
+          switchMode.textContent = 'Нет аккаунта? Зарегистрироваться';
+          if (roleBlock) roleBlock.style.display = 'none'; // при входе скрываем выбор роли
+        }
+      });
+
+      // Обработчик отправки (регистрация или вход)
+      submitForm.addEventListener('click', async () => {
+        const username = usernameInput.value.trim();
+        const email = emailInput.value.trim();
+        let selectedRole = 'student';
+        roleInputs.forEach?.(r => { if (r.checked) selectedRole = r.value; });
+        modalInfo.textContent = '';
+
+        if (!username || !email) {
+          modalInfo.textContent = 'Заполните имя пользователя и email.';
+          return;
+        }
+
+        try {
+          if (mode === 'register') {
+            // регистрация
+            const res = await fetch(
+              `http://127.0.0.1:8000/add_user/?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&role=${encodeURIComponent(selectedRole)}`,
+              { method: 'POST' }
+            );
+            if (!res.ok) {
+              modalInfo.textContent = 'Ошибка регистрации: сервер вернул ' + res.status;
+              return;
+            }
+            const data = await res.json();
+            modalInfo.textContent = data.message || 'Регистрация прошла успешно. Теперь войдите.';
+            // переключаем в режим входа, но остаёмся в модалке, чтобы пользователь ввёл данные
+            mode = 'login';
+            formTitle.textContent = 'Вход';
+            submitForm.textContent = 'Войти';
+            switchMode.textContent = 'Нет аккаунта? Зарегистрироваться';
+            return;
+          } else {
+            // вход
+            // специальный учительский аккаунт admin/admin (без регистрации)
+            if (username === 'admin' && email === 'admin') {
+              localStorage.setItem('username', 'admin');
+              localStorage.setItem('email', 'admin');
+              localStorage.setItem('role', 'teacher');
+              localStorage.setItem('isAdmin', 'true');
+              modalInfo.textContent = 'Вход выполнен как преподаватель (admin).';
+              updateUI();
+              modal.style.display = 'none';
+              return;
+            }
+
+            const res = await fetch(`http://127.0.0.1:8000/check_user/?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}`);
+            if (!res.ok) {
+              modalInfo.textContent = 'Ошибка проверки: сервер вернул ' + res.status;
+              return;
+            }
+            const data = await res.json();
+            if (data.exists) {
+              // сохраняем и НЕ редиректим
+              localStorage.setItem('username', username);
+              localStorage.setItem('email', email);
+              if (data.role) {
+                localStorage.setItem('role', data.role);
+              } else {
+                localStorage.setItem('role', 'student');
+              }
+              modalInfo.textContent = data.message || 'Вход выполнен';
+              updateUI();
+              modal.style.display = 'none';
+              // остаёмся на главной — пользователь сам нажмёт "Начать обучение"
+            } else {
+              modalInfo.textContent = 'Пользователь не найден. Зарегистрируйтесь.';
+            }
+          }
+        } catch (err) {
+          modalInfo.textContent = 'Ошибка сети или сервера: ' + (err.message || err);
+          console.error(err);
+        }
+      });
+
+      // кнопка "Начать обучение" ведёт на страницу материалов
+      startBtn.addEventListener('click', () => {
+        const role = localStorage.getItem('role') || 'student';
+        if (role === 'teacher') {
+          window.location.href = 'all_results.html';
+        } else {
+          window.location.href = 'materials.html';
+        }
+      });
+
+      // Закрываем модалку кликом вне её
+      window.addEventListener('click', (e) => {
+        if (e.target === modal) modal.style.display = 'none';
+      });
+
+      // Профиль: переход на страницу профиля
+      profileBtn.addEventListener('click', () => {
+        window.location.href = 'profile.html';
+      });
+
+      // init
+      updateUI();
+      const monthTitle = document.getElementById("monthTitle");
+const calendarGrid = document.getElementById("calendarGrid");
+const prevMonth = document.getElementById("prevMonth");
+const nextMonth = document.getElementById("nextMonth");
+const selectedDateTitle = document.getElementById("selectedDateTitle");
+const noteText = document.getElementById("noteText");
+const saveNote = document.getElementById("saveNote");
+
+const monthNames = [
+  "Қаңтар", "Ақпан", "Наурыз", "Сәуір", "Мамыр", "Маусым",
+  "Шілде", "Тамыз", "Қыркүйек", "Қазан", "Қараша", "Желтоқсан"
+];
+
+let currentDate = new Date();
+let selectedDateKey = "";
+
+function getNoteKey(dateKey) {
+  const user = localStorage.getItem("username") || "guest";
+  return `note_${user}_${dateKey}`;
+}
+
+function renderCalendar() {
+  calendarGrid.innerHTML = "";
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  monthTitle.textContent = `${monthNames[month]} ${year}`;
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+
+  let startDay = firstDay.getDay();
+  startDay = startDay === 0 ? 6 : startDay - 1;
+
+  for (let i = 0; i < startDay; i++) {
+    const empty = document.createElement("div");
+    empty.className = "calendar-day empty";
+    calendarGrid.appendChild(empty);
+  }
+
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const dayBox = document.createElement("div");
+    dayBox.className = "calendar-day";
+
+    const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const savedNote = localStorage.getItem(getNoteKey(dateKey));
+
+    dayBox.innerHTML = `
+      <strong>${day}</strong>
+      ${savedNote ? '<span class="note-dot"></span>' : ''}
+    `;
+
+    dayBox.addEventListener("click", () => {
+      selectedDateKey = dateKey;
+      selectedDateTitle.textContent = `${day} ${monthNames[month]} ${year}`;
+      noteText.value = localStorage.getItem(getNoteKey(dateKey)) || "";
+
+      document.querySelectorAll(".calendar-day").forEach(d => d.classList.remove("selected"));
+      dayBox.classList.add("selected");
+    });
+
+    calendarGrid.appendChild(dayBox);
+  }
+}
+
+saveNote.addEventListener("click", () => {
+  if (!selectedDateKey) {
+    alert("Алдымен күнді таңдаңыз");
+    return;
+  }
+
+  localStorage.setItem(getNoteKey(selectedDateKey), noteText.value);
+  renderCalendar();
+  alert("Жазба сақталды!");
+});
+
+prevMonth.addEventListener("click", () => {
+  currentDate.setMonth(currentDate.getMonth() - 1);
+  renderCalendar();
+});
+
+nextMonth.addEventListener("click", () => {
+  currentDate.setMonth(currentDate.getMonth() + 1);
+  renderCalendar();
+});
+
+renderCalendar();
+    });
+  </script>
+
+</body>
+
+</html>

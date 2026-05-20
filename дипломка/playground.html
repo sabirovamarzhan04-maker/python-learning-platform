@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Python Песочница - Тәжірибе алаңы</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+  <!-- Pyodide for Python execution in browser -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+  <style>
+    .CodeMirror {
+      height: 100% !important;
+      font-size: 16px;
+      border-radius: 16px;
+    }
+    .playground-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Python Playground</h1>
+  <nav>
+    <a href="index.html">Басты бет</a>
+    <a href="materials.html">Материалдар</a>
+    <a href="practice.html">Тапсырмалар</a>
+    <a href="playground.html" class="active">Песочница</a>
+  </nav>
+</header>
+
+<main>
+  <div class="playground-header">
+    <h2>Код жазу және іске қосу</h2>
+    <button id="runBtn" class="btn-primary" onclick="runPython()">
+      <span id="runBtnText">▶ Кодты іске қосу</span>
+    </button>
+  </div>
+
+  <div class="playground-container">
+    <div class="card" style="padding: 0; display: flex; flex-direction: column;">
+      <textarea id="codeEditor"># Осында Python кодын жазыңыз
+print("Сәлем, Python!")
+
+for i in range(5):
+    print(f"Сан: {i}")
+
+def square(x):
+    return x * x
+
+print(f"5-тің квадраты: {square(5)}")
+</textarea>
+    </div>
+
+    <div class="terminal-window">
+      <div class="terminal-header">
+        <div class="terminal-controls">
+          <div class="dot red"></div>
+          <div class="dot yellow"></div>
+          <div class="dot green"></div>
+        </div>
+        <span>terminal.py</span>
+      </div>
+      <div id="output">Питонды дайындап жатырмыз... (бұл біраз уақыт алуы мүмкін)</div>
+      <div class="terminal-status" id="status">Күйі: Жүктелуде...</div>
+    </div>
+  </div>
+</main>
+
+<script>
+  let editor;
+  let pyodide;
+
+  async function init() {
+    // Init CodeMirror
+    editor = CodeMirror.fromTextArea(document.getElementById("codeEditor"), {
+      mode: "python",
+      theme: "dracula",
+      lineNumbers: true,
+      indentUnit: 4,
+      matchBrackets: true,
+      styleActiveLine: true
+    });
+
+    // Init Pyodide
+    try {
+      pyodide = await loadPyodide();
+      document.getElementById("output").textContent = "Python дайын! Кодты жазып, 'Іске қосу' түймесін басыңыз.";
+      document.getElementById("status").textContent = "Күйі: Дайын";
+      document.getElementById("status").style.color = "var(--success)";
+    } catch (e) {
+      document.getElementById("output").textContent = "Қате: Pyodide жүктелмеді.";
+      document.getElementById("status").textContent = "Күйі: Қате";
+      document.getElementById("status").style.color = "var(--danger)";
+    }
+  }
+
+  async function runPython() {
+    if (!pyodide) return;
+
+    const code = editor.getValue();
+    const outputDiv = document.getElementById("output");
+    const statusDiv = document.getElementById("status");
+    const runBtn = document.getElementById("runBtn");
+    
+    outputDiv.textContent = "";
+    statusDiv.textContent = "Күйі: Орындалуда...";
+    runBtn.disabled = true;
+
+    // Capture stdout
+    pyodide.setStdout({
+      batched: (str) => {
+        outputDiv.textContent += str + "\n";
+      }
+    });
+
+    try {
+      await pyodide.runPythonAsync(code);
+      statusDiv.textContent = "Күйі: Сәтті аяқталды";
+      statusDiv.style.color = "var(--success)";
+    } catch (err) {
+      outputDiv.textContent += "\n❌ Қате:\n" + err;
+      statusDiv.textContent = "Күйі: Қатемен аяқталды";
+      statusDiv.style.color = "var(--danger)";
+    } finally {
+      runBtn.disabled = false;
+    }
+  }
+
+  init();
+</script>
+
+</body>
+</html>

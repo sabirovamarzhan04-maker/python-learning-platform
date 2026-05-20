@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Мини-тест по теме</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
+</head>
+
+<body>
+  <header>
+    <h1>Python Learning</h1>
+    <nav>
+      <a href="index.html">Басты бет</a>
+      <a href="materials.html">Материалдар</a>
+      <a href="practice.html">Тапсырмалар</a>
+      <a href="results.html">Нәтижелер</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2 id="quiz-title">Мини-тест</h2>
+
+    <div id="quiz-container"></div>
+
+    <button id="submit-btn" class="btn">Завершить тест</button>
+
+    <div id="result" class="result-panel" style="display:none;"></div>
+  </main>
+
+  <footer>
+    © 2025 Python Learning. Барлық құқықтар қорғалған.
+  </footer>
+
+  <script>
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    const topic = getQueryParam("topic") || "";
+    const quizTitle = document.getElementById("quiz-title");
+    if (topic) {
+      quizTitle.textContent = "Мини-тест по теме: " + topic;
+    }
+
+    const API_BASE = "http://127.0.0.1:8000";
+    const quizContainer = document.getElementById("quiz-container");
+    const resultBlock = document.getElementById("result");
+    const submitBtn = document.getElementById("submit-btn");
+
+    async function loadQuiz() {
+      if (!topic) {
+        quizTitle.textContent = "Тақырып таңдалмады";
+        quizContainer.innerHTML = "Бұл бетте тестті өту үшін алдымен <b>Материалдар</b> бетінен нақты бір тақырыпты таңдауыңыз керек.<br><br>" +
+          "<button onclick=\"window.location.href='materials.html'\" class=\"btn\">📚 Материалдар бетіне өту</button>";
+        submitBtn.style.display = "none";
+        return;
+      }
+
+      try {
+        const resp = await fetch(API_BASE + "/quiz/?topic=" + encodeURIComponent(topic));
+        const data = await resp.json();
+
+        if (!data.questions || !Array.isArray(data.questions)) {
+          quizContainer.innerHTML = "<p>Бұл тақырып бойынша тест табылмады.</p>";
+          submitBtn.style.display = "none";
+          return;
+        }
+
+        renderQuestions(data.questions);
+      } catch (e) {
+        console.error(e);
+        quizContainer.innerHTML = "<p>Тестті жүктеу кезінде қате пайда болды.</p>";
+        submitBtn.style.display = "none";
+      }
+    }
+
+    function calculateScore(questions) {
+      let correct = 0;
+      let totalAuto = 0;
+      let userAnswers = {};
+
+      questions.forEach((q, index) => {
+        const name = "q_" + index;
+        if (q.type === "test") {
+          totalAuto += 1;
+          const selected = document.querySelector("input[name='" + name + "']:checked");
+          if (selected) {
+            userAnswers[index] = q.options[parseInt(selected.value, 10) - 1]; // Сохраняем текст ответа
+            if (parseInt(selected.value, 10) === q.correct) {
+              correct += 1;
+            }
+          } else {
+            userAnswers[index] = "Жауап берілмеді";
+          }
+        } else if (q.type === "theory") {
+          const textarea = document.querySelector("textarea[name='" + name + "']");
+          userAnswers[index] = textarea ? textarea.value : "";
+        } else if (q.type === "code_fill") {
+          totalAuto += 1;
+          const input = document.querySelector("input[name='" + name + "']");
+          if (input) {
+            userAnswers[index] = input.value;
+            if (Array.isArray(q.correct)) {
+              const userParts = input.value
+                .split(",")
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+              if (userParts.length === q.correct.length) {
+                let allMatch = true;
+                for (let i = 0; i < q.correct.length; i++) {
+                  if (userParts[i] !== q.correct[i]) {
+                    allMatch = false;
+                    break;
+                  }
+                }
+                if (allMatch) {
+                  correct += 1;
+                }
+              }
+            }
+          }
+        }
+      });
+
+      return { correct, totalAuto, userAnswers };
+    }
+
+    function showResult(score, questions) {
+      resultBlock.style.display = "block";
+      
+      let html = "<strong>Нәтиже:</strong><br>" +
+        "Автоматты түрде тексерілген сұрақтар бойынша ұпай: " + score.correct + " / " + score.totalAuto + ".<br>" +
+        "Ашық сұрақтарға баға қойылмайды (мұғалім қолмен тексереді).<br><br>" +
+        "<strong>Сұрақтар мен дұрыс жауаптар:</strong><br><ul style='list-style-type:none; padding:0;'>";
+
+      questions.forEach((q, index) => {
+        let qText = q.question;
+        let uAns = score.userAnswers[index] || "Жауап берілмеді";
+        let corrText = "";
+
+        if (q.type === "test" && Array.isArray(q.options)) {
+          corrText = q.options[q.correct - 1] || q.correct;
+        } else if (q.type === "code_fill") {
+          corrText = Array.isArray(q.correct) ? q.correct.join(", ") : q.correct;
+        }
+
+        html += `<li style="margin-bottom: 12px; background: var(--bg-input); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+          <b>${index + 1}. ${qText}</b><br>
+          <span style="color: var(--text-muted);">Сіздің жауабыңыз: ${uAns}</span><br>`;
+          
+        if (q.type === "test" || q.type === "code_fill") {
+           html += `<span style="color: var(--success);">Дұрыс жауап: ${corrText}</span>`;
+        } else {
+           html += `<span style="color: var(--warning);">Бұл ашық сұрақ (бағаланбайды)</span>`;
+        }
+        
+        html += `</li>`;
+      });
+
+      html += "</ul>";
+      resultBlock.innerHTML = html;
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    }
+
+    async function submitQuizData(scoreData, questions) {
+      let username = localStorage.getItem("username");
+      let email = localStorage.getItem("email");
+
+      if (!username || !email) {
+        username = prompt("Есіміңізді енгізіңіз (username):");
+        email = prompt("Email енгізіңіз:");
+        if (username) localStorage.setItem("username", username);
+        if (email) localStorage.setItem("email", email);
+      }
+
+      const answersArray = questions.map((q, idx) => ({
+        question: q.question,
+        answer: scoreData.userAnswers[idx] || "Жауап жоқ",
+        correct: q.correct || "N/A",
+        type: q.type
+      }));
+
+      try {
+        await fetch(API_BASE + "/quiz_result/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: username || "Аноним",
+            email: email || "no-email@test.com",
+            topic: topic,
+            correct: scoreData.correct,
+            total: questions.length,
+            answers: JSON.stringify(answersArray)
+          })
+        });
+      } catch (e) {
+        console.error("Test result could not be saved:", e);
+      }
+    }
+
+    function renderQuestions(questions) {
+      quizContainer.innerHTML = "";
+
+      questions.forEach((q, index) => {
+        const card = document.createElement("div");
+        card.className = "question-card";
+
+        const title = document.createElement("h3");
+        title.className = "question-title";
+        title.textContent = (index + 1) + ". " + q.question;
+
+        const badge = document.createElement("span");
+        badge.className = "badge";
+        if (q.type === "test") badge.textContent = "Тест";
+        else if (q.type === "theory") badge.textContent = "Теория";
+        else if (q.type === "code_fill") badge.textContent = "Код";
+
+        title.appendChild(badge);
+        card.appendChild(title);
+
+        if (q.type === "test" && Array.isArray(q.options)) {
+          const optionsDiv = document.createElement("div");
+          optionsDiv.className = "options";
+
+          q.options.forEach((opt, i) => {
+            const label = document.createElement("label");
+            const input = document.createElement("input");
+            input.type = "radio";
+            input.name = "q_" + index;
+            input.value = (i + 1).toString();
+            label.appendChild(input);
+            label.appendChild(document.createTextNode(" " + opt));
+            optionsDiv.appendChild(label);
+          });
+
+          card.appendChild(optionsDiv);
+        } else if (q.type === "theory") {
+          const textarea = document.createElement("textarea");
+          textarea.name = "q_" + index;
+          textarea.placeholder = "Ваш ответ...";
+          card.appendChild(textarea);
+        } else if (q.type === "code_fill") {
+          const pre = document.createElement("pre");
+          pre.textContent = q.template || "";
+          pre.style.whiteSpace = "pre-wrap";
+          pre.style.backgroundColor = "var(--bg-input)";
+          pre.style.padding = "10px";
+          pre.style.borderRadius = "8px";
+          pre.style.border = "1px solid var(--border-color)";
+
+          const input = document.createElement("input");
+          input.type = "text";
+          input.name = "q_" + index;
+          input.placeholder = "Вставьте недостающие элементы через запятую";
+          input.style.marginTop = "10px";
+
+          card.appendChild(pre);
+          card.appendChild(input);
+        }
+
+        quizContainer.appendChild(card);
+      });
+
+      submitBtn.addEventListener("click", () => {
+        const score = calculateScore(questions);
+        showResult(score, questions);
+        submitQuizData(score, questions);
+      });
+    }
+
+    loadQuiz();
+  </script>
+</body>
+
+</html>

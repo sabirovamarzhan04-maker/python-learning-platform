@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="kk">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Практикалық тапсырмалар</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
+</head>
+
+<body>
+
+  <header>
+    <h1>Python Learning</h1>
+    <nav>
+      <a href="index.html">Басты бет</a>
+      <a href="materials.html">Материалдар</a>
+      <a href="playground.html">Песочница</a>
+      <a href="results.html">Нәтижелер</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2 id="topicTitle">Тақырып анықталмады</h2>
+    <div id="tasks">Тапсырма жүктелуде...</div>
+
+    <div id="answerSection" style="display:none;">
+      <div id="answerArea"></div>
+      <button id="sendBtn" onclick="checkAnswer()">Келесі ➜</button>
+      <div id="feedback"></div>
+    </div>
+  </main>
+
+  <footer>
+    © 2026 Python Learning. Барлық құқықтар қорғалған.
+  </footer>
+
+  <script>
+    const API = "http://127.0.0.1:8000";
+    const params = new URLSearchParams(window.location.search);
+    const topic = params.get("topic");
+    const username = localStorage.getItem("username") || "student1";
+    const email = localStorage.getItem("email") || "student1@example.com";
+
+    const title = document.getElementById("topicTitle");
+    const tasksDiv = document.getElementById("tasks");
+    const answerSection = document.getElementById("answerSection");
+    const answerArea = document.getElementById("answerArea");
+    const feedbackDiv = document.getElementById("feedback");
+    const sendBtn = document.getElementById("sendBtn");
+
+    let questions = [];
+    let currentTaskIndex = 0;
+    let correctCount = 0;
+    let userAnswers = {};
+
+    if (topic) {
+      title.textContent = "Тақырып: " + topic;
+    } else {
+      title.textContent = "Тақырып таңдалмады";
+      tasksDiv.innerHTML = `
+        <div class="practice-question-card">
+          <p>Бұл бетте ИИ-тапсырмаларды орындау үшін алдымен <b>Материалдар</b> бетінен нақты бір тақырыпты таңдауыңыз керек.</p>
+          <br>
+          <button onclick="window.location.href='materials.html'">📚 Материалдар бетіне өту</button>
+        </div>
+      `;
+      answerSection.style.display = "none";
+    }
+
+    // === Check if already completed ===
+    async function checkIfCompleted() {
+      try {
+        const res = await fetch(`${API}/results/?username=${username}&email=${email}`);
+        const data = await res.json();
+        const alreadyDone = data.results?.find(r => r.topic === topic && r.completed);
+        if (alreadyDone) {
+          tasksDiv.innerHTML = `<div class="practice-question-card"><p>✅ Бұл тақырып бұрын орындалған.</p><p style="color: var(--text-muted); margin-top: 10px;">Жауап: ${alreadyDone.feedback}</p></div>`;
+          answerSection.style.display = "none";
+          return true;
+        }
+      } catch(e) {}
+      return false;
+    }
+
+    // === Load tasks from AI ===
+    async function loadTasks() {
+      if (!topic) return;
+      const done = await checkIfCompleted();
+      if (done) return;
+
+      tasksDiv.innerHTML = `<div class="practice-question-card"><p>⏳ ИИ тапсырмаларды дайындап жатыр...</p></div>`;
+
+      try {
+        const res = await fetch(`${API}/generate_tasks/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic })
+        });
+        const data = await res.json();
+
+        if (data.questions && Array.isArray(data.questions) && data.questions.length > 0) {
+          questions = data.questions;
+          currentTaskIndex = 0;
+          showCurrentTask();
+        } else {
+          tasksDiv.innerHTML = `<div class="practice-question-card"><p>⚠ Тапсырмаларды алу мүмкін болмады.</p></div>`;
+        }
+      } catch (e) {
+        tasksDiv.innerHTML = `<div class="practice-question-card"><p>⚠ Серверге қосылу мүмкін болмады.</p></div>`;
+      }
+    }
+
+    // === Render current task ===
+    function showCurrentTask() {
+      feedbackDiv.innerHTML = "";
+
+      if (currentTaskIndex >= questions.length) {
+        showSummary();
+        return;
+      }
+
+      const q = questions[currentTaskIndex];
+      const num = currentTaskIndex + 1;
+
+      // Build question card
+      let typeLabel = "Теория";
+      if (q.type === "test") typeLabel = "Тест";
+      else if (q.type === "code" || q.type === "code_fill") typeLabel = "Код";
+
+      let cardHtml = `
+        <div class="practice-question-card">
+          <h3>${num}. ${q.question} <span class="badge">${typeLabel}</span></h3>
+      `;
+
+      // Build answer area
+      answerSection.style.display = "block";
+      sendBtn.disabled = false;
+      sendBtn.textContent = currentTaskIndex < questions.length - 1 ? "Келесі ➜" : "Аяқтау ✓";
+
+      if (q.type === "test" && Array.isArray(q.options)) {
+        // Radio buttons for test questions
+        let optionsHtml = '<div class="practice-options">';
+        q.options.forEach((opt, idx) => {
+          optionsHtml += `
+            <label>
+              <input type="radio" name="practiceAnswer" value="${idx + 1}">
+              <span>${opt}</span>
+            </label>
+          `;
+        });
+        optionsHtml += '</div>';
+        cardHtml += optionsHtml;
+        answerArea.innerHTML = ''; // No extra input needed
+      } else if ((q.type === "code" || q.type === "code_fill") && (q.template || q.code_template)) {
+        // Code with template
+        const template = q.template || q.code_template || "";
+        cardHtml += `<div class="practice-code-template">${escapeHtml(template)}</div>`;
+        answerArea.innerHTML = `
+          <div class="form-field practice-input-answer">
+            <label>Бос жерлерді толықтырыңыз (үтір арқылы):</label>
+            <input type="text" id="codeAnswer" placeholder="Мысалы: range, 6">
+          </div>
+        `;
+      } else if (q.type === "theory") {
+        // Open-ended theory question
+        answerArea.innerHTML = `
+          <div class="form-field practice-input-answer">
+            <label>Жауабыңыз:</label>
+            <textarea id="theoryAnswer" rows="3" placeholder="Жауабыңызды осында жазыңыз..."></textarea>
+          </div>
+        `;
+      } else {
+        // Fallback - generic text input
+        answerArea.innerHTML = `
+          <div class="form-field practice-input-answer">
+            <label>Жауабыңыз:</label>
+            <textarea id="theoryAnswer" rows="3" placeholder="Жауабыңызды осында жазыңыз..."></textarea>
+          </div>
+        `;
+      }
+
+      cardHtml += '</div>';
+      tasksDiv.innerHTML = cardHtml;
+    }
+
+    // === Check answer ===
+    function checkAnswer() {
+      const q = questions[currentTaskIndex];
+      let userAnswer = "";
+      let correct = null; // true, false, or null (open question)
+
+      if (q.type === "test" && Array.isArray(q.options)) {
+        const selected = document.querySelector("input[name='practiceAnswer']:checked");
+        if (!selected) {
+          feedbackDiv.innerHTML = '<div class="practice-feedback wrong">⚠ Жауапты таңдаңыз!</div>';
+          return;
+        }
+        const selectedNum = parseInt(selected.value, 10);
+        userAnswer = q.options[selectedNum - 1];
+
+        // GPT sometimes returns 0-based, sometimes 1-based index
+        const correctIdx = q.correct;
+        if (typeof correctIdx === "number") {
+          // Try 1-based first (most common)
+          if (selectedNum === correctIdx) {
+            correct = true;
+          }
+          // Try 0-based if correct seems to be 0-based (index 0 picked and correct is 0)
+          else if (correctIdx === 0 && selectedNum === 1) {
+            correct = true;
+          }
+          // If correct index seems > options length, it's likely 0-based
+          else if (correctIdx < q.options.length && selectedNum === correctIdx + 1 && correctIdx >= 0) {
+            // This case handles when GPT gives 0-based: correct=0 means first option
+            // Only apply if our 1-based didn't match above
+            // Let's try: if correctIdx is 0, first option; else 1-based
+          }
+          else {
+            correct = false;
+          }
+        } else if (typeof correctIdx === "string") {
+          // GPT returned correct answer as text
+          correct = userAnswer.trim().toLowerCase() === correctIdx.trim().toLowerCase();
+        }
+
+      } else if ((q.type === "code" || q.type === "code_fill")) {
+        const codeInput = document.getElementById("codeAnswer");
+        if (!codeInput || !codeInput.value.trim()) {
+          feedbackDiv.innerHTML = '<div class="practice-feedback wrong">⚠ Жауапты жазыңыз!</div>';
+          return;
+        }
+        userAnswer = codeInput.value.trim();
+        
+        // Get correct answers array
+        const correctArr = q.answer || q.correct;
+        if (Array.isArray(correctArr)) {
+          const userParts = userAnswer.split(",").map(s => s.trim()).filter(Boolean);
+          if (userParts.length === correctArr.length) {
+            correct = correctArr.every((val, idx) => 
+              userParts[idx]?.toLowerCase() === String(val).toLowerCase()
+            );
+          } else {
+            correct = false;
+          }
+        } else if (typeof correctArr === "string") {
+          correct = userAnswer.toLowerCase() === correctArr.toLowerCase();
+        } else {
+          correct = null; // can't check, mark as open
+        }
+
+      } else {
+        // Theory / open question
+        const theoryInput = document.getElementById("theoryAnswer");
+        if (!theoryInput || !theoryInput.value.trim()) {
+          feedbackDiv.innerHTML = '<div class="practice-feedback wrong">⚠ Жауапты жазыңыз!</div>';
+          return;
+        }
+        userAnswer = theoryInput.value.trim();
+        correct = null; // Not auto-graded
+      }
+
+      // Store answer
+      userAnswers[currentTaskIndex] = userAnswer;
+
+      // Show feedback
+      if (correct === true) {
+        feedbackDiv.innerHTML = '<div class="practice-feedback correct">✅ Дұрыс жауап!</div>';
+        correctCount++;
+      } else if (correct === false) {
+        let hint = '';
+        if (q.type === "test" && Array.isArray(q.options) && typeof q.correct === "number") {
+          const ci = q.correct;
+          // Show correct option (handle both 0-based and 1-based)
+          const correctOpt = q.options[ci - 1] || q.options[ci] || '';
+          if (correctOpt) hint = ` Дұрыс жауап: ${correctOpt}`;
+        } else if ((q.type === "code" || q.type === "code_fill") && (q.answer || q.correct)) {
+          const arr = q.answer || q.correct;
+          hint = ` Дұрыс жауап: ${Array.isArray(arr) ? arr.join(", ") : arr}`;
+        }
+        feedbackDiv.innerHTML = `<div class="practice-feedback wrong">❌ Дұрыс емес.${hint}</div>`;
+      } else {
+        feedbackDiv.innerHTML = '<div class="practice-feedback neutral">📝 Жауап сақталды. Мұғалім тексереді.</div>';
+      }
+
+      // Disable button to prevent double-click, advance after delay
+      sendBtn.disabled = true;
+      currentTaskIndex++;
+      setTimeout(showCurrentTask, 1800);
+    }
+
+    // === Show summary ===
+    function showSummary() {
+      answerSection.style.display = "none";
+
+      const autoCount = questions.filter(q => q.type === "test" || q.type === "code" || q.type === "code_fill").length;
+      
+      let html = `
+        <div class="practice-summary">
+          <h2>🎉 Барлық тапсырмалар орындалды!</h2>
+          <p style="font-size: 16px; color: var(--text-muted);">
+            Автоматты тексерілген сұрақтар: <strong style="color: var(--accent);">${correctCount} / ${autoCount}</strong>.
+            Ашық сұрақтарға баға қойылмайды.
+          </p>
+      `;
+
+      questions.forEach((q, idx) => {
+        let uAns = userAnswers[idx] || "Жауап берілмеді";
+        let corrText = "";
+
+        if (q.type === "test" && Array.isArray(q.options)) {
+          const ci = q.correct;
+          corrText = q.options[ci - 1] || q.options[ci] || String(ci);
+        } else if (q.type === "code" || q.type === "code_fill") {
+          const ansArray = q.answer || q.correct;
+          corrText = Array.isArray(ansArray) ? ansArray.join(", ") : String(ansArray || "");
+        }
+
+        html += `<div class="practice-summary-item">
+          <strong>${idx + 1}. ${q.question}</strong>
+          <div class="user-answer">Сіздің жауабыңыз: ${escapeHtml(String(uAns))}</div>`;
+        
+        if (q.type === "test" || q.type === "code" || q.type === "code_fill") {
+          html += `<div class="correct-answer">✓ Дұрыс жауап: ${escapeHtml(corrText)}</div>`;
+        } else {
+          html += `<div class="open-answer">📝 Ашық сұрақ (мұғалім тексереді)</div>`;
+        }
+        html += '</div>';
+      });
+
+      html += `
+        <div style="margin-top: 20px;">
+          <button onclick="window.location.href='materials.html'">📚 Материалдарға қайту</button>
+        </div>
+        </div>
+      `;
+
+      tasksDiv.innerHTML = html;
+
+      // Save results
+      if (questions.length > 0) {
+        saveQuizSummary().catch(() => {});
+      }
+    }
+
+    async function saveQuizSummary() {
+      const answersArray = questions.map((q, idx) => ({
+        question: q.question,
+        answer: userAnswers[idx] || "Жауап жоқ",
+        correct: q.correct || q.answer || "N/A",
+        type: q.type
+      }));
+
+      try {
+        await fetch(`${API}/quiz_result/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username,
+            email,
+            topic: topic + "_practice",
+            correct: correctCount,
+            total: questions.length,
+            answers: JSON.stringify(answersArray)
+          })
+        });
+      } catch (e) {
+        // Silently ignore
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    loadTasks();
+  </script>
+
+</body>
+
+</html>

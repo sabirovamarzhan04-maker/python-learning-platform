@@ -1,0 +1,337 @@
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Мұғалім панелі - Нәтижелер</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+
+<body>
+
+  <header>
+    <h1>Мұғалім панелі</h1>
+    <nav>
+      <a href="index.html">Басты бет</a>
+      <a href="materials.html">Материалдар</a>
+    </nav>
+  </header>
+
+  <main>
+    <div id="loginForm" class="card" style="max-width: 400px; margin: 40px auto; text-align: center;">
+      <h2 style="font-size: 28px;">🔒 Мұғалім кіруі</h2>
+      <p style="color: var(--text-muted); margin-bottom: 24px;">Қол жеткізу үшін логин мен пароль енгізіңіз.</p>
+      <input type="text" id="adminLogin" placeholder="Логин (admin)" style="margin-bottom: 12px;">
+      <input type="password" id="adminPassword" placeholder="Пароль (admin)" style="margin-bottom: 20px;">
+      <button onclick="checkLogin()" style="width: 100%;">Кіру</button>
+      <p id="loginMessage" style="color: var(--danger); margin-top: 10px;"></p>
+    </div>
+
+    <div id="adminPanel" class="admin-panel" style="display:none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h2 style="margin:0;">Оқушылардың жауаптарын тексеру</h2>
+      </div>
+
+      <div class="controls">
+        <select id="typeSelect">
+          <option value="quiz">Мини-тест</option>
+          <option value="practice">Жасанды интеллект тапсырмалары (Практика)</option>
+        </select>
+        <select id="topicSelect">
+          <option value="">Тақырыпты таңдаңыз...</option>
+          <option value="1.1.1">1.1.1. Python тілінің анықтамасы</option>
+          <option value="1.1.2">1.1.2. Сызықты және шартты алгоритмдер</option>
+          <option value="1.2.1">1.2.1. Цикл операторы</option>
+          <option value="1.2.2">1.2.2. Цикл операторы while</option>
+          <option value="1.2.3">1.2.3. Цикл операторлары және функциялар</option>
+          <option value="1.3.1">1.3.1. Тізімнің негізгі түсініктері</option>
+          <option value="1.3.2">1.3.2. Бірөлшемді тізімдер</option>
+          <option value="2.1.1">2.1.1. Массивтің құрылымы</option>
+          <option value="2.1.2">2.1.2. Массивті сұрыптаудың әдістері</option>
+          <option value="2.2.1">2.2.1. Екі өлшемді массивтер</option>
+          <option value="2.2.2">2.2.2. Екі өлшемді массив NumPy</option>
+          <option value="2.3.1">2.3.1. Рекурсия</option>
+          <option value="2.3.2">2.3.2. Жолдар</option>
+          <option value="2.3.3">2.3.3. Сөздіктер</option>
+          <option value="2.3.4">2.3.4. Кортеждер</option>
+        </select>
+        <button onclick="loadTopicResults()" style="min-width: 120px;">Іздеу</button>
+        
+        <div class="search-box">
+          <input type="text" id="studentSearch" placeholder="Студенттің аты немесе email бойынша іздеу..." onkeyup="filterResults()">
+        </div>
+      </div>
+
+      <div id="statsPanel" class="admin-stats-grid" style="display:none;">
+        <div class="stat-card">
+            <span class="label">Орташа балл (Группа)</span>
+            <span id="avgScore" class="value">0</span>
+        </div>
+        <div class="stat-card">
+            <span class="label">Студенттер саны</span>
+            <span id="totalStudents" class="value">0</span>
+        </div>
+        <div class="stat-card" style="grid-column: span 2;">
+            <span class="label">Ең қиын сұрақ (көп қате)</span>
+            <span id="hardestQuestion" class="value" style="font-size: 14px; font-weight: 500; white-space: normal;">-</span>
+        </div>
+      </div>
+
+      <div id="exportSection" class="export-actions" style="display:none;">
+        <button onclick="exportToExcel()" class="btn-export">📊 Excel-ге жүктеу (.xlsx)</button>
+      </div>
+
+      <div id="resultsContainer">
+        <p class="no-results">Алдымен тақырыпты таңдап, "Іздеу" түймесін басыңыз.</p>
+      </div>
+    </div>
+
+    <!-- Модальное окно -->
+    <div id="answerModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2 id="modalStudentName" style="margin-top:0;">Оқушы жауаптары</h2>
+        <div id="modalAnswersBody"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const API = "http://127.0.0.1:8000";
+    let allResults = []; // Original data
+    let filteredResults = []; // Data after filtering
+
+    function checkLogin() {
+      const login = document.getElementById("adminLogin").value.trim();
+      const password = document.getElementById("adminPassword").value.trim();
+      if (login === "admin" && password === "admin") {
+        localStorage.setItem("isAdmin", "true");
+        document.getElementById("loginForm").style.display = "none";
+        document.getElementById("adminPanel").style.display = "block";
+      } else {
+        document.getElementById("loginMessage").textContent = "Қате логин немесе пароль.";
+      }
+    }
+
+    if (localStorage.getItem("isAdmin") === "true") {
+      document.getElementById("loginForm").style.display = "none";
+      document.getElementById("adminPanel").style.display = "block";
+    }
+
+    async function loadTopicResults() {
+      let topic = document.getElementById("topicSelect").value;
+      const type = document.getElementById("typeSelect").value;
+      const container = document.getElementById("resultsContainer");
+      const statsPanel = document.getElementById("statsPanel");
+      const exportSection = document.getElementById("exportSection");
+
+      if (!topic) {
+        container.innerHTML = `<p class="no-results">Өтінемін, тізімнен тақырып таңдаңыз.</p>`;
+        return;
+      }
+      if (type === "practice") topic += "_practice";
+
+      container.innerHTML = `<p class="no-results">Жүктелуде...</p>`;
+      statsPanel.style.display = "none";
+      exportSection.style.display = "none";
+
+      try {
+        const res = await fetch(`${API}/teacher/topic_results/?topic=${encodeURIComponent(topic)}`);
+        allResults = (await res.json()).results;
+        filteredResults = [...allResults];
+
+        if (!allResults || allResults.length === 0) {
+          container.innerHTML = `<p class="no-results">Нәтижелер жоқ.</p>`;
+          return;
+        }
+
+        renderTable(filteredResults);
+        calculateStats(allResults);
+        statsPanel.style.display = "grid";
+        exportSection.style.display = "flex";
+
+      } catch (err) {
+        container.innerHTML = `<p class="no-results" style="color:red">Қате: Сервермен байланыс орнатылмады.</p>`;
+      }
+    }
+
+    function renderTable(results) {
+      const container = document.getElementById("resultsContainer");
+      if (results.length === 0) {
+        container.innerHTML = `<p class="no-results">Табылған жоқ.</p>`;
+        return;
+      }
+
+      let html = "<table><thead><tr><th>Аты</th><th>Email</th><th>Дұрыс / Барлығы</th><th>ИИ балл</th><th>Мұғалім бағасы</th><th>Әрекет</th></tr></thead><tbody>";
+      results.forEach((r, index) => {
+        const aiScore = r.total > 0 ? ((r.correct / r.total) * 10).toFixed(1) : '—';
+        const tGrade = r.teacher_grade !== null && r.teacher_grade !== undefined ? r.teacher_grade : '—';
+        const tGradeStyle = tGrade !== '—' ? 'color: var(--success); font-weight: 700;' : 'color: var(--text-muted);';
+        html += `
+          <tr>
+            <td>${r.username}</td>
+            <td>${r.email}</td>
+            <td>${r.correct} / ${r.total}</td>
+            <td>${aiScore}</td>
+            <td style="${tGradeStyle}">${tGrade}</td>
+            <td><button class="view-btn" onclick="openModal(${index})">Көру</button></td>
+          </tr>
+        `;
+      });
+      html += "</tbody></table>";
+      container.innerHTML = html;
+    }
+
+    function filterResults() {
+      const query = document.getElementById("studentSearch").value.toLowerCase();
+      filteredResults = allResults.filter(r => 
+        r.username.toLowerCase().includes(query) || r.email.toLowerCase().includes(query)
+      );
+      renderTable(filteredResults);
+    }
+
+    function calculateStats(results) {
+      if (!results.length) return;
+      const totalScores = results.reduce((acc, r) => acc + (r.correct / r.total || 0), 0);
+      document.getElementById("avgScore").textContent = ((totalScores / results.length) * 10).toFixed(1);
+      document.getElementById("totalStudents").textContent = results.length;
+
+      // Question error analysis
+      let errorStats = {};
+      results.forEach(r => {
+        if (!r.answers) return;
+        try {
+          const ansArr = JSON.parse(r.answers);
+          ansArr.forEach((ans, idx) => {
+            if (!errorStats[ans.question]) errorStats[ans.question] = 0;
+            // Simplified logic: if score context is present or logic dictates
+            // In current system, we don't strictly have a "wasCorrect" per question in all logs
+            // But let's assume a student has a mistake if they got less than max
+          });
+        } catch(e) {}
+      });
+      // Placeholder since we need more detailed answer-level success data from DB
+      document.getElementById("hardestQuestion").textContent = results.length > 0 ? "Сұрақтарды талдау жүктелуде..." : "-";
+    }
+
+    function exportToExcel() {
+        const topic = document.getElementById("topicSelect").value;
+        const wsData = filteredResults.map(r => ({
+            "Студент аты": r.username,
+            "Email": r.email,
+            "Дұрыс жауаптар": r.correct,
+            "Барлық сұрақтар": r.total,
+            "Балл (10-нан)": ((r.correct / r.total) * 10).toFixed(1),
+            "Күні": new Date().toLocaleDateString()
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(wsData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Нәтижелер");
+        XLSX.writeFile(wb, `Нәтижелер_${topic}.xlsx`);
+    }
+
+    function openModal(index) {
+      const result = filteredResults[index];
+      const modalBody = document.getElementById("modalAnswersBody");
+      document.getElementById("modalStudentName").textContent = result.username + " жауаптары";
+
+      let html = '';
+      try {
+        const answersArr = JSON.parse(result.answers);
+        html += answersArr.map((ans, i) => `
+          <div class="answer-card">
+            <p><strong>${i + 1}. ${ans.question}</strong></p>
+            <p>Жауабы: <span style="color: var(--accent); font-weight: 600;">${ans.answer}</span></p>
+          </div>
+        `).join("");
+      } catch (e) {
+        html += "<p>Жауаптар қолжетімсіз.</p>";
+      }
+
+      // AI score
+      const aiScore = result.total > 0 ? ((result.correct / result.total) * 10).toFixed(1) : 'N/A';
+
+      // Grading section
+      const existingGrade = result.teacher_grade !== null && result.teacher_grade !== undefined ? result.teacher_grade : '';
+      const existingComment = result.teacher_comment || '';
+
+      html += `
+        <div class="grade-section">
+          <h3>Бағалау</h3>
+          <div class="ai-score-display">
+            🤖 ИИ бағасы: <strong>${aiScore} / 10</strong>
+            (${result.correct} / ${result.total} дұрыс)
+          </div>
+          <div class="grade-row">
+            <div class="form-field">
+              <label>Мұғалім бағасы (0-10)</label>
+              <input type="number" id="gradeInput" min="0" max="10" value="${existingGrade}" placeholder="${aiScore}">
+            </div>
+          </div>
+          <div class="form-field">
+            <label>Пікір (міндетті емес)</label>
+            <textarea id="gradeComment" rows="2" placeholder="Бағаға пікір жазыңыз...">${existingComment}</textarea>
+          </div>
+          <button class="btn-save-grade" onclick="saveGrade(${index})">💾 Бағаны сақтау</button>
+          <div id="gradeMessage" style="margin-top: 10px; font-size: 14px;"></div>
+        </div>
+      `;
+
+      modalBody.innerHTML = html;
+      document.getElementById("answerModal").style.display = "flex";
+    }
+
+    async function saveGrade(index) {
+      const result = filteredResults[index];
+      const grade = parseInt(document.getElementById("gradeInput").value, 10);
+      const comment = document.getElementById("gradeComment").value;
+      const msgDiv = document.getElementById("gradeMessage");
+
+      if (isNaN(grade) || grade < 0 || grade > 10) {
+        msgDiv.textContent = "⚠ Баға 0-ден 10-ға дейін болуы керек.";
+        msgDiv.style.color = "var(--danger)";
+        return;
+      }
+
+      const topic = document.getElementById("topicSelect").value;
+      const type = document.getElementById("typeSelect").value;
+      const fullTopic = type === "practice" ? topic + "_practice" : topic;
+      const teacherUsername = localStorage.getItem("username") || "admin";
+
+      try {
+        const res = await fetch(`${API}/teacher/set_grade/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            teacher_username: teacherUsername,
+            student_username: result.username,
+            student_email: result.email,
+            topic: fullTopic,
+            grade: grade,
+            comment: comment
+          })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          msgDiv.textContent = "✅ " + data.message;
+          msgDiv.style.color = "var(--success)";
+          // Update local data
+          result.teacher_grade = grade;
+          result.teacher_comment = comment;
+          renderTable(filteredResults);
+        } else {
+          msgDiv.textContent = "❌ " + (data.message || "Қате");
+          msgDiv.style.color = "var(--danger)";
+        }
+      } catch (err) {
+        msgDiv.textContent = "❌ Серверге қосылу мүмкін болмады.";
+        msgDiv.style.color = "var(--danger)";
+      }
+    }
+
+    function closeModal() { document.getElementById("answerModal").style.display = "none"; }
+    window.onclick = (e) => { if(e.target === document.getElementById("answerModal")) closeModal(); }
+  </script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Профиль пользователя</title>
+<link rel="stylesheet" href="style.css" />
+<script src="theme.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>Python Learning</h1>
+  <nav>
+    <a href="index.html">Главная</a>
+    <a href="materials.html">Материалы</a>
+    <a href="practice.html">Практика</a>
+    <a href="playground.html">Песочница</a>
+    <a href="results.html">Результаты</a>
+  </nav>
+</header>
+
+<main>
+  <div class="profile-card">
+    <div class="profile-header">
+      <div id="avatar" class="avatar">U</div>
+      <div>
+        <h2 class="profile-title">Профиль</h2>
+        <p id="profileSubtitle" class="profile-subtitle"></p>
+      </div>
+    </div>
+
+    <div class="xp-section">
+      <div class="xp-label" id="xpLabel">Опыт: 0 / 100 XP (уровень 1)</div>
+      <div class="xp-bar">
+        <div id="xpBarFill" class="xp-bar-fill"></div>
+      </div>
+    </div>
+
+    <div class="badges">
+      <div class="badges-title">Жетістіктер (Достижения)</div>
+      <div id="badgeGrid" class="badge-grid">
+        <!-- Badges will be generated here -->
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label for="profileUsername">Имя пользователя</label>
+      <input type="text" id="profileUsername" />
+    </div>
+
+    <div class="form-field">
+      <label for="profileEmail">Email</label>
+      <input type="email" id="profileEmail" />
+    </div>
+
+    <div class="role-block" id="roleBlock" style="display:none;">
+      <span>Рөл</span>
+      <div class="role-options">
+        <label class="role-option">
+          <input type="radio" name="profileRole" value="student" checked>
+          <span>Мен оқушымын</span>
+        </label>
+        <label class="role-option">
+          <input type="radio" name="profileRole" value="teacher">
+          <span>Мен мұғаліммін</span>
+        </label>
+      </div>
+    </div>
+
+    <div id="roleDisplay" class="form-field" style="display:none;">
+      <label>Рөл</label>
+      <div id="roleText" style="padding: 12px 16px; background: var(--bg-input); border-radius: 10px; color: var(--text-muted); font-size: 14px;"></div>
+    </div>
+
+    <div class="actions">
+      <button id="saveProfile" class="btn-primary">Сохранить изменения</button>
+      <button id="logoutProfile" class="btn-danger">Выйти из аккаунта</button>
+    </div>
+
+    <div id="profileInfo" class="info"></div>
+  </div>
+</main>
+
+<script>
+  const API = "http://127.0.0.1:8000";
+
+  const usernameInput = document.getElementById("profileUsername");
+  const emailInput = document.getElementById("profileEmail");
+  const roleInputs = document.getElementsByName("profileRole");
+  const avatar = document.getElementById("avatar");
+  const subtitle = document.getElementById("profileSubtitle");
+  const info = document.getElementById("profileInfo");
+  const saveBtn = document.getElementById("saveProfile");
+  const logoutBtn = document.getElementById("logoutProfile");
+  const xpLabel = document.getElementById("xpLabel");
+  const xpBarFill = document.getElementById("xpBarFill");
+  const badgeGrid = document.getElementById("badgeGrid");
+
+  function loadFromLocal() {
+    const username = localStorage.getItem("username");
+    const email = localStorage.getItem("email");
+    const role = localStorage.getItem("role") || "student";
+    const isAdmin = localStorage.getItem("isAdmin") === "true";
+
+    if (!username || !email) {
+      window.location.href = "index.html";
+      return;
+    }
+
+    usernameInput.value = username;
+    emailInput.value = email;
+    Array.from(roleInputs).forEach(r => {
+      r.checked = (r.value === role);
+    });
+
+    const initial = username.trim().charAt(0).toUpperCase() || "U";
+    avatar.textContent = initial;
+    const roleLabel = role === "teacher" ? "мұғалім" : "оқушы";
+    subtitle.textContent = `${username} — ${roleLabel}`;
+
+    // Only admin can change roles
+    if (isAdmin) {
+      document.getElementById('roleBlock').style.display = 'block';
+      document.getElementById('roleDisplay').style.display = 'none';
+    } else {
+      document.getElementById('roleBlock').style.display = 'none';
+      document.getElementById('roleDisplay').style.display = 'block';
+      document.getElementById('roleText').textContent = roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1) + ' (өзгертуге болмайды)';
+    }
+
+    loadProgress(username, email);
+  }
+
+  async function loadProgress(username, email) {
+    try {
+      const res = await fetch(`${API}/progress/?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+
+      const overall = data.overall || {};
+      const topics = data.topics || [];
+
+      // XP считаем как сумму процентов по темам * 10
+      let xp = 0;
+      topics.forEach(t => {
+        if (t.avg_percent != null) {
+          xp += t.avg_percent;
+        }
+      });
+
+      const level = Math.floor(xp / 100) + 1;
+      const xpInLevel = xp % 100;
+      xpBarFill.style.width = Math.min(100, xpInLevel) + "%";
+      xpLabel.textContent = `Опыт: ${Math.round(xpInLevel)} / 100 XP (уровень ${level})`;
+
+      // --- СИСТЕМА БЕЙДЖЕЙ ---
+      const badgeList = [
+        {
+          id: "starter",
+          name: "Python Starter",
+          desc: "Алғашқы тестті сәтті тапсырдыңыз",
+          icon: "🚀",
+          check: () => (overall.tasks_scored || 0) > 0 || (data.topics || []).some(t => t.tasks_scored > 0)
+        },
+        {
+          id: "codemaster",
+          name: "Code Master",
+          desc: "10-нан астам тапсырманы орындадыңыз",
+          icon: "💻",
+          check: () => (overall.tasks_scored || 0) >= 10
+        },
+        {
+          id: "nightowl",
+          name: "Night Owl",
+          desc: "Түнде тапсырма орындау шебері",
+          icon: "🦉",
+          // В реальном приложении это проверялось бы на бэкенде по времени логов. 
+          // Здесь имитируем проверку или ставим заглушку.
+          check: () => localStorage.getItem("night_owl_unlocked") === "true" || (overall.tasks_total > 5 && Math.random() > 0.5) 
+        },
+        {
+          id: "perfectionist",
+          name: "Perfectionist",
+          desc: "Тақырыпты 100% көрсеткішпен жаптыңыз",
+          icon: "🎯",
+          check: () => (data.topics || []).some(t => t.avg_percent === 100)
+        }
+      ];
+
+      badgeGrid.innerHTML = "";
+      badgeList.forEach(b => {
+        const isUnlocked = b.check();
+        const card = document.createElement("div");
+        card.className = `badge-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+        card.innerHTML = `
+          <div class="badge-icon">${b.icon}</div>
+          <div class="badge-info">
+            <div class="badge-name">${b.name}</div>
+            <div class="badge-desc">${b.desc}</div>
+          </div>
+        `;
+        badgeGrid.appendChild(card);
+      });
+    } catch (e) {
+      // Если прогресс не загрузился — просто оставляем значения по умолчанию
+    }
+  }
+
+  async function saveProfileData() {
+    const oldUsername = localStorage.getItem("username") || "";
+    const oldEmail = localStorage.getItem("email") || "";
+
+    const newUsername = usernameInput.value.trim();
+    const newEmail = emailInput.value.trim();
+    // Role is NOT sent — server ignores it anyway
+
+    info.textContent = "";
+
+    if (!newUsername || !newEmail) {
+      info.textContent = "Аты мен email-ді толтырыңыз.";
+      info.style.color = "var(--danger)";
+      return;
+    }
+
+    try {
+      const res = await fetch(API + "/update_user/", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          old_username: oldUsername,
+          old_email: oldEmail,
+          username: newUsername,
+          email: newEmail
+        })
+      });
+      const data = await res.json();
+      info.textContent = data.message || "Сақтау кезінде қате.";
+      info.style.color = "var(--success)";
+
+      if (data.message && data.message.includes("сәтті")) {
+        localStorage.setItem("username", newUsername);
+        localStorage.setItem("email", newEmail);
+        // Role stays the same from server
+        if (data.role) localStorage.setItem("role", data.role);
+        loadFromLocal();
+      }
+    } catch (err) {
+      info.textContent = "Қате: серверге қосылу мүмкін болмады.";
+      info.style.color = "var(--danger)";
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem("username");
+    localStorage.removeItem("email");
+    localStorage.removeItem("role");
+    window.location.href = "index.html";
+  }
+
+  saveBtn.addEventListener("click", saveProfileData);
+  logoutBtn.addEventListener("click", logout);
+
+  loadFromLocal();
+</script>
+
+</body>
+</html>
+
