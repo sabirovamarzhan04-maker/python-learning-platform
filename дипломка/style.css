@@ -1589,13 +1589,13 @@ tr:last-child td { border-bottom: none; }
 @media (max-width: 768px){
 
   header{
-    padding: 10px 12px;
-    gap: 8px;
+    padding: 8px 10px;
+    gap: 6px;
   }
 
   header h1,
   .logo{
-    font-size: 22px;
+    font-size: 20px;
     text-align: center;
   }
 
@@ -1604,7 +1604,7 @@ tr:last-child td { border-bottom: none; }
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
   }
 
   nav{
@@ -1614,12 +1614,11 @@ tr:last-child td { border-bottom: none; }
     gap: 8px;
   }
 
-  nav a{
-    font-size: 14px;
-    padding: 8px;
+nav a {
     text-align: center;
-  }
-
+    padding: 6px;
+    font-size: 13px;
+}
   .theme-toggle{
     width: 42px;
     height: 42px;
@@ -1667,4 +1666,9 @@ tr:last-child td { border-bottom: none; }
     min-height: 55px;
     font-size: 12px;
   }
+  .theme-toggle,
+.profile-btn{
+    width: 38px;
+    height: 38px;
+}
 }
