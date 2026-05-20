@@ -51,9 +51,9 @@
     const role = localStorage.getItem('role');
     if (isAdmin || role === 'teacher') {
       const nav = header.querySelector('nav');
-      if (nav && !nav.querySelector('a[href="all_results.html"]')) {
+      if (nav && !nav.querySelector('a[href="/static/all_results.html"]')) {
         const teacherLink = document.createElement('a');
-        teacherLink.href = 'all_results.html';
+        teacherLink.href = '/static/all_results.html';
         teacherLink.textContent = '👨‍🏫 Мұғалім панелі';
         teacherLink.style.fontWeight = '600';
         teacherLink.style.color = 'var(--secondary)';
