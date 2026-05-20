@@ -265,9 +265,9 @@
       startBtn.addEventListener('click', () => {
         const role = localStorage.getItem('role') || 'student';
         if (role === 'teacher') {
-          window.location.href = 'all_results.html';
+          window.location.href = '/static/all_results.html';
         } else {
-          window.location.href = 'materials.html';
+          window.location.href = '/static/materials.html';
         }
       });
 
