@@ -682,7 +682,7 @@ def generate_tasks(req: TaskRequest):
     if lecture_content:
         context_msg += f"Мына лекция материалына сүйеніп сұрақтар құрастыр:\n---\n{lecture_content}\n---\n"
         
-context_msg += (
+    context_msg += (
     "Маңызды: Дәл 10 тапсырма құрастыр:\n"
     "- 5 тест сұрағы;\n"
     "- 3 ашық сұрақ;\n"
