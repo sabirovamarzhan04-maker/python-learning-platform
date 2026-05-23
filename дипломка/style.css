@@ -1673,4 +1673,15 @@ tr:last-child td { border-bottom: none; }
     display: block;
     overflow-x: auto;
   }
+}.practice-code-template{
+  background:#1e293b;
+  color:#e2e8f0;
+  padding:20px;
+  border-radius:16px;
+  font-family:Consolas, monospace;
+  white-space:pre-wrap;
+  overflow-x:auto;
+  line-height:1.7;
+  font-size:15px;
+  margin-top:15px;
 }

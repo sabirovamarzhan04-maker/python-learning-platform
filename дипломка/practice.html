@@ -264,25 +264,61 @@
       // Store answer
       userAnswers[currentTaskIndex] = userAnswer;
 
-      // Show feedback
-      if (correct === true) {
-        feedbackDiv.innerHTML = '<div class="practice-feedback correct">✅ Дұрыс жауап!</div>';
-        correctCount++;
-      } else if (correct === false) {
-        let hint = '';
-        if (q.type === "test" && Array.isArray(q.options) && typeof q.correct === "number") {
-          const ci = q.correct;
-          // Show correct option (handle both 0-based and 1-based)
-          const correctOpt = q.options[ci - 1] || q.options[ci] || '';
-          if (correctOpt) hint = ` Дұрыс жауап: ${correctOpt}`;
-        } else if ((q.type === "code" || q.type === "code_fill") && (q.answer || q.correct)) {
-          const arr = q.answer || q.correct;
-          hint = ` Дұрыс жауап: ${Array.isArray(arr) ? arr.join(", ") : arr}`;
-        }
-        feedbackDiv.innerHTML = `<div class="practice-feedback wrong">❌ Дұрыс емес.${hint}</div>`;
-      } else {
-        feedbackDiv.innerHTML = '<div class="practice-feedback neutral">📝 Жауап сақталды. Мұғалім тексереді.</div>';
+  // Show feedback
+  if (correct === true) {
+
+    let explanation = q.explanation
+      ? `<br><b>Түсіндірме:</b> ${q.explanation}`
+      : "";
+
+    feedbackDiv.innerHTML =
+      `<div class="practice-feedback correct">
+        ✅ Дұрыс жауап!
+        ${explanation}
+      </div>`;
+
+    correctCount++;
+
+  } else if (correct === false) {
+
+    let hint = '';
+    let correctText = '';
+
+    if (q.type === "test" && Array.isArray(q.options) && typeof q.correct === "number") {
+
+      const ci = q.correct;
+      correctText = q.options[ci - 1] || q.options[ci] || '';
+
+      if (correctText) {
+        hint = ` Дұрыс жауап: ${correctText}`;
       }
+
+    } else if ((q.type === "code" || q.type === "code_fill") && (q.answer || q.correct)) {
+
+      const arr = q.answer || q.correct;
+
+      correctText = Array.isArray(arr)
+        ? arr.join(", ")
+        : arr;
+
+      hint = ` Дұрыс жауап: ${correctText}`;
+    }
+
+    let explanation = q.explanation
+      ? `<br><b>Түсіндірме:</b> ${q.explanation}`
+      : "";
+
+    feedbackDiv.innerHTML =
+      `<div class="practice-feedback wrong">
+        ❌ Дұрыс емес.${hint}
+        ${explanation}
+      </div>`;
+
+  } else {
+
+    feedbackDiv.innerHTML =
+      '<div class="practice-feedback neutral">📝 Жауап сақталды. Мұғалім тексереді.</div>';
+  }
 
       // Disable button to prevent double-click, advance after delay
       sendBtn.disabled = true;
