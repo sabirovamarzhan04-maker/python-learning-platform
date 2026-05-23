@@ -724,52 +724,52 @@ context_msg += (
 )
 
     # Пытаемся попросить GPT сгенерировать 10 структурированных вопросов по теме
-try:
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        response_format={"type": "json_object"},
-        messages=[
-            {
-                "role": "system",
-                "content": context_msg,
-            },
-            {
-                "role": "user",
-                "content": f"{internal_topic} ({topic}) тақырыбы бойынша дәл 10 тапсырма дайында: 5 тест, 3 ашық сұрақ, 2 кодтағы бос орынды толықтыру.",
-            },
-        ],
-        max_tokens=3500,
-        temperature=0.7
-    )
-
-    text = response.choices[0].message.content
-
     try:
-        parsed_json = json.loads(text)
-        questions = parsed_json.get("questions", [])
-    except Exception:
-        raise
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            response_format={"type": "json_object"},
+            messages=[
+                {
+                    "role": "system",
+                    "content": context_msg,
+                },
+                {
+                    "role": "user",
+                    "content": f"{internal_topic} ({topic}) тақырыбы бойынша дәл 10 тапсырма дайында: 5 тест, 3 ашық сұрақ, 2 кодтағы бос орынды толықтыру.",
+                },
+            ],
+            max_tokens=3500,
+            temperature=0.7
+        )
 
-    clean_questions = []
-    for q in questions:
-        if isinstance(q, dict) and "type" in q and "question" in q:
-            clean_questions.append(q)
-        if len(clean_questions) >= 10:
-            break
+        text = response.choices[0].message.content
 
-    if not clean_questions:
-        raise ValueError("no valid questions")
+        try:
+            parsed_json = json.loads(text)
+            questions = parsed_json.get("questions", [])
+        except Exception:
+            raise
 
-    return {"topic": topic, "questions": clean_questions}
+        clean_questions = []
+        for q in questions:
+            if isinstance(q, dict) and "type" in q and "question" in q:
+                clean_questions.append(q)
+            if len(clean_questions) >= 10:
+                break
 
-except Exception as e:
-    print(f"[generate_tasks] GPT error for topic={topic}: {e}")
-    fallback = PRACTICE_FALLBACK.get(topic, [])
+        if not clean_questions:
+            raise ValueError("no valid questions")
 
-    if not fallback:
-        fallback = PRACTICE_FALLBACK.get("general", [])
+        return {"topic": topic, "questions": clean_questions}
 
-    return {"topic": topic, "questions": fallback}
+    except Exception as e:
+        print(f"[generate_tasks] GPT error for topic={topic}: {e}")
+        fallback = PRACTICE_FALLBACK.get(topic, [])
+
+        if not fallback:
+            fallback = PRACTICE_FALLBACK.get("general", [])
+
+        return {"topic": topic, "questions": fallback}
 
 # -----------------------------------------
 # 📋 FALLBACK ВОПРОСЫ (когда GPT недоступен)
