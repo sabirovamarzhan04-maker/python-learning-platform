@@ -677,6 +677,10 @@ def generate_tasks(req: TaskRequest):
     topic = req.topic
     internal_topic = QUIZ_MAPPING.get(topic, topic)
     lecture_content = get_lecture_text(topic)
+    context_msg = "Сен Python мұғалімісің. Берілген тақырып бойынша студентке арналған 10 қысқа ЖӘНЕ БІР-БІРІНЕН ЕРЕКШЕ сұрақ тізімін JSON форматында қайтар.\n"
+    if lecture_content:
+        context_msg += f"Мына лекция материалына сүйеніп сұрақтар құрастыр:\n---\n{lecture_content}\n---\n"
+        
     
     context_msg += (
         "Маңызды: Дәл 10 тапсырма құрастыр және ретін сақта:\n"
