@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey, Boolean, text
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import sessionmaker, declarative_base
 from pydantic import BaseModel
 from openai import OpenAI
 from fastapi.responses import FileResponse
@@ -27,11 +27,17 @@ client = OpenAI(
 # -----------------------------------------
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True
 )
 
+Base = declarative_base()
+
+SessionLocal = sessionmaker(bind=engine)
 # -----------------------------------------
 # 📦 MODELS
 # -----------------------------------------
