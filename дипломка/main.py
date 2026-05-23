@@ -683,13 +683,13 @@ def generate_tasks(req: TaskRequest):
         context_msg += f"Мына лекция материалына сүйеніп сұрақтар құрастыр:\n---\n{lecture_content}\n---\n"
         
 context_msg += (
-    "Маңызды: Дәл 10 тапсырма құрастыр және ретін сақта:\n"
-    "1-5 тапсырма: type='test' — тест сұрақтары.\n"
-    "6-8 тапсырма: type='theory' — ашық сұрақтар, оқушы өзі жауап жазады.\n"
-    "9-10 тапсырма: type='code' — Python кодындағы бос орынды толықтыру.\n\n"
+    "Маңызды: Дәл 10 тапсырма құрастыр:\n"
+    "- 5 тест сұрағы;\n"
+    "- 3 ашық сұрақ;\n"
+    "- 2 код тапсырмасы.\n\n"
 
     "Тек қана 'questions' кілті бар JSON объектісін қайтар.\n"
-    "Дәл осындай формат қолдан:\n"
+    "Формат:\n"
     "{\n"
     "  \"questions\": [\n"
     "    {\n"
@@ -697,86 +697,79 @@ context_msg += (
     "      \"question\": \"...\",\n"
     "      \"options\": [\"A\", \"B\", \"C\", \"D\"],\n"
     "      \"correct\": 1,\n"
-    "      \"explanation\": \"Неге осы жауап дұрыс екенін қысқаша түсіндір\"\n"
+    "      \"explanation\": \"Дұрыс жауап неге осы екенін түсіндір\"\n"
     "    },\n"
     "    {\n"
     "      \"type\": \"theory\",\n"
     "      \"question\": \"...\",\n"
-    "      \"teacher_check\": true,\n"
-    "      \"placeholder\": \"Жауабыңызды осы жерге жазыңыз...\"\n"
+    "      \"teacher_check\": true\n"
     "    },\n"
     "    {\n"
     "      \"type\": \"code\",\n"
-    "      \"question\": \"Кодтағы бос орынды толықтырыңыз\",\n"
-    "      \"template\": \"for i in ______(5):\\n    print(i)\",\n"
-    "      \"answer\": [\"range\"],\n"
-    "      \"explanation\": \"range(5) 0-ден 4-ке дейін мән береді, сондықтан цикл 5 рет орындалады.\"\n"
+    "      \"question\": \"...\",\n"
+    "      \"template\": \"код с ______\",\n"
+    "      \"answer\": [\"дұрыс жауап\"],\n"
+    "      \"explanation\": \"Код жауабы неге дұрыс екенін түсіндір\"\n"
     "    }\n"
     "  ]\n"
     "}\n\n"
 
-    "Қатаң ережелер:\n"
-    "- Барлығы тек берілген тақырыпқа қатысты болсын.\n"
-    "- Дәл 10 тапсырма болсын.\n"
-    "- Алғашқы 5 тапсырма міндетті түрде test болсын.\n"
-    "- 6,7,8 тапсырмалар міндетті түрде theory болсын.\n"
-    "- 9,10 тапсырмалар міндетті түрде code болсын.\n"
-    "- theory сұрақтарында options, correct, answer, explanation болмауы керек.\n"
-    "- theory сұрақтарында teacher_check: true болсын.\n"
-    "- test сұрақтарында options, correct, explanation міндетті.\n"
-    "- code сұрақтарында template ішінде міндетті түрде ______ болсын.\n"
-    "- code сұрақтарында answer және explanation міндетті.\n"
-    "- Барлық мәтін қазақ тілінде болсын.\n"
+    "Ережелер:\n"
+    "- Барлық тапсырма тек берілген тақырыпқа қатысты болсын;\n"
+    "- Тестте міндетті түрде correct және explanation болсын;\n"
+    "- Код тапсырмасында міндетті түрде answer және explanation болсын;\n"
+    "- Ашық сұрақта answer/explanation жазба, тек teacher_check: true болсын;\n"
+    "- Барлық мәтін қазақ тілінде болсын;\n"
+    "- Beginner/intermediate деңгейінде болсын."
 )
+
     # Пытаемся попросить GPT сгенерировать 10 структурированных вопросов по теме
+try:
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        response_format={"type": "json_object"},
+        messages=[
+            {
+                "role": "system",
+                "content": context_msg,
+            },
+            {
+                "role": "user",
+                "content": f"{internal_topic} ({topic}) тақырыбы бойынша дәл 10 тапсырма дайында: 5 тест, 3 ашық сұрақ, 2 кодтағы бос орынды толықтыру.",
+            },
+        ],
+        max_tokens=3500,
+        temperature=0.7
+    )
+
+    text = response.choices[0].message.content
+
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            response_format={"type": "json_object"},
-            messages=[
-                {
-                    "role": "system",
-                    "content": context_msg,
-                },
-                {
-                    "role": "user",
-                    "content": f"{internal_topic} ({topic}) тақырыбы бойынша 10 аралас сұрақ дайында. Тек осы тақырыпқа және берілген лекцияға қатысты болсын.",
-                },
-            ],
-            max_tokens=3500,
-            temperature=0.7
-        )
+        parsed_json = json.loads(text)
+        questions = parsed_json.get("questions", [])
+    except Exception:
+        raise
 
-        text = response.choices[0].message.content
-        # Пытаемся распарсить JSON от модели
-        try:
-            parsed_json = json.loads(text)
-            questions = parsed_json.get("questions", [])
-        except Exception:
-            raise
+    clean_questions = []
+    for q in questions:
+        if isinstance(q, dict) and "type" in q and "question" in q:
+            clean_questions.append(q)
+        if len(clean_questions) >= 10:
+            break
 
-        # Лёгкая валидация: оставляем только объекты с полем question и type
-        clean_questions = []
-        for q in questions:
-            if isinstance(q, dict) and "type" in q and "question" in q:
-                clean_questions.append(q)
-            if len(clean_questions) >= 10:
-                break
+    if not clean_questions:
+        raise ValueError("no valid questions")
 
-        if not clean_questions:
-            raise ValueError("no valid questions")
+    return {"topic": topic, "questions": clean_questions}
 
-        return {"topic": topic, "questions": clean_questions}
+except Exception as e:
+    print(f"[generate_tasks] GPT error for topic={topic}: {e}")
+    fallback = PRACTICE_FALLBACK.get(topic, [])
 
-    except Exception as e:
-        # Fallback если GPT не работает — полноценные вопросы по каждой теме
-        print(f"[generate_tasks] GPT error for topic={topic}: {e}")
-        fallback = PRACTICE_FALLBACK.get(topic, [])
-        if not fallback:
-            # Если нет fallback для этой темы, общие вопросы
-            fallback = PRACTICE_FALLBACK.get("general", [])
-        return {"topic": topic, "questions": fallback}
+    if not fallback:
+        fallback = PRACTICE_FALLBACK.get("general", [])
 
+    return {"topic": topic, "questions": fallback}
 
 # -----------------------------------------
 # 📋 FALLBACK ВОПРОСЫ (когда GPT недоступен)
