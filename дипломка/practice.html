@@ -157,6 +157,14 @@
         // Code with template
         const template = q.template || q.code_template || "";
         cardHtml += `<div class="practice-code-template">${escapeHtml(template)}</div>`;
+        if (q.expected_output) {
+          cardHtml += `
+            <div class="practice-expected-output">
+              <b>Нәтиже:</b>
+              <pre>${escapeHtml(q.expected_output)}</pre>
+            </div>
+         `;
+      }
         answerArea.innerHTML = `
           <div class="form-field practice-input-answer">
             <label>Бос жерлерді толықтырыңыз (үтір арқылы):</label>
