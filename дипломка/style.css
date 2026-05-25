@@ -63,7 +63,7 @@
 [data-theme="dark"] body {
   background-image:
     linear-gradient(rgba(10, 12, 30, 0.45), rgba(10, 12, 30, 0.45)),
-    url("/static/images/dark-bg.png");
+    url("/static/frontend/images/dark-bg.png");
 
   background-size: cover;
   background-position: center;
@@ -1707,12 +1707,12 @@ tr:last-child td { border-bottom: none; }
 body{
   background:
     linear-gradient(rgba(248,248,255,0.72), rgba(248,248,255,0.72)),
-    url("/static/images/light-bg.png") center top / cover no-repeat fixed !important;
+    url("/static/frontend/images/light-bg.png") center top / cover no-repeat fixed !important;
 }
 
 [data-theme="dark"] body{
   background:
     linear-gradient(rgba(5,8,25,0.45), rgba(5,8,25,0.45)),
-    url("/static/images/dark-bg.png") center top / cover no-repeat fixed !important;
+    url("/static/frontend/images/dark-bg.png") center top / cover no-repeat fixed !important;
 }
 
