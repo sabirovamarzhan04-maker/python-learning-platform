@@ -63,7 +63,7 @@
 [data-theme="dark"] body {
   background-image:
     linear-gradient(rgba(10, 12, 30, 0.45), rgba(10, 12, 30, 0.45)),
-    url("/static/frontend/images/dark-bg.png");
+    url("/static/images/dark-bg.png");
 
   background-size: cover;
   background-position: center;
@@ -1704,15 +1704,7 @@ tr:last-child td { border-bottom: none; }
     overflow: hidden;
     border-radius: 0 0 40px 40px;
 }
-/* ===== FINAL BACKGROUND + CALENDAR FIX ===== */
-
-html,
 body{
-  min-height:100%;
-}
-
-body{
-  margin:0;
   background:
     linear-gradient(rgba(248,248,255,0.72), rgba(248,248,255,0.72)),
     url("/static/images/light-bg.png") center top / cover no-repeat fixed !important;
@@ -1724,35 +1716,3 @@ body{
     url("/static/images/dark-bg.png") center top / cover no-repeat fixed !important;
 }
 
-.hero-background,
-.hero-background::before,
-main.hero-background{
-  background: transparent !important;
-}
-
-.home-calendar{
-  background: rgba(255,255,255,0.94) !important;
-  color: #1e293b !important;
-}
-
-.calendar-day{
-  border: 1px solid rgba(30,41,59,0.14) !important;
-  background: rgba(255,255,255,0.68) !important;
-}
-
-.home-calendar h3,
-.calendar-day,
-.calendar-day strong,
-.weekdays span,
-.calendar-head h3{
-  color:#1e293b !important;
-}
-
-[data-theme="dark"] .home-calendar{
-  background: rgba(255,255,255,0.96) !important;
-}
-
-[data-theme="dark"] .calendar-day{
-  border: 1px solid rgba(30,41,59,0.16) !important;
-  background: rgba(255,255,255,0.72) !important;
-}
