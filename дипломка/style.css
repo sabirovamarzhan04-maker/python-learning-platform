@@ -1711,7 +1711,7 @@ tr:last-child td { border-bottom: none; }
 body{
   background-image:
     linear-gradient(rgba(248,248,255,0.72), rgba(248,248,255,0.72)),
-    url("/static/frontend/images/light-bg.png") !important;
+    url("/static/images/light-bg.png") !important;
   background-size: cover !important;
   background-position: center top !important;
   background-repeat: no-repeat !important;
@@ -1721,7 +1721,7 @@ body{
 [data-theme="dark"] body{
   background-image:
     linear-gradient(rgba(5,8,25,0.35), rgba(5,8,25,0.35)),
-    url("/static/frontend/images/dark-bg.png") !important;
+    url("/static/images/dark-bg.png") !important;
   background-size: cover !important;
   background-position: center top !important;
   background-repeat: no-repeat !important;
