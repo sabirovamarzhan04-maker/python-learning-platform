@@ -62,9 +62,13 @@
 
 [data-theme="dark"] body {
   background-image:
-    radial-gradient(ellipse 80% 60% at 10% 0%, rgba(99,102,241,0.12), transparent),
-    radial-gradient(ellipse 60% 50% at 90% 20%, rgba(139,92,246,0.10), transparent),
-    radial-gradient(ellipse 50% 60% at 50% 100%, rgba(236,72,153,0.06), transparent);
+    linear-gradient(rgba(10, 12, 30, 0.45), rgba(10, 12, 30, 0.45)),
+    url("/static/frontend/images/dark-bg.png");
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 [data-theme="dark"] pre {
@@ -1711,25 +1715,11 @@ tr:last-child td { border-bottom: none; }
             rgba(248,248,255,0.82),
             rgba(248,248,255,0.82)
         ),
-        url("/static/frontend/images/python-bg.png")
+        url("/static/frontend/images/light-bg.png");
 
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
 
     z-index: -1;
-}
-main.hero-background{
-    background:
-        linear-gradient(
-            rgba(248,248,255,0.72),
-            rgba(248,248,255,0.72)
-        ),
-        url("/static/frontend/images/python-bg.png") !important;
-
-    background-size: cover !important;
-    background-position: center !important;
-    background-repeat: no-repeat !important;
-
-    border-radius: 0 0 40px 40px;
 }
