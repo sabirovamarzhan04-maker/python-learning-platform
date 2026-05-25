@@ -1773,3 +1773,15 @@ main.hero-background{
 [data-theme="dark"] .calendar-head h3 {
   color: #1e293b !important;
 }
+/* FINAL BACKGROUND FIX */
+body{
+  background:
+    linear-gradient(rgba(248,248,255,0.72), rgba(248,248,255,0.72)),
+    url("/static/images/light-bg.png") center top / cover no-repeat fixed !important;
+}
+
+[data-theme="dark"] body{
+  background:
+    linear-gradient(rgba(5,8,25,0.35), rgba(5,8,25,0.35)),
+    url("/static/images/dark-bg.png") center top / cover no-repeat fixed !important;
+}
