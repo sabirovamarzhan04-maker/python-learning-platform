@@ -1737,3 +1737,25 @@ body{
 [data-theme="dark"] .calendar-day.empty{
   background: rgba(255,255,255,0.35) !important;
 }
+main.hero-background h2,
+main.hero-background .lead,
+#welcome{
+  max-width: 620px;
+  text-align: left;
+}
+
+main.hero-background h2{
+  font-size: 38px;
+  color: #ffffff;
+  text-shadow: 0 8px 28px rgba(0,0,0,0.45);
+}
+
+main.hero-background .lead{
+  color: rgba(255,255,255,0.78);
+  margin-left: 0;
+}
+
+#welcome{
+  color: rgba(255,255,255,0.85) !important;
+  font-weight: 600;
+}

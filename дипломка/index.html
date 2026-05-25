@@ -37,13 +37,12 @@
   </header>
 
   <main class="hero-background">
-    <h2>Python тілін оңай үйрен</h2>
-    <p class="lead">Интерактивті сабақтар, тесттер, тапсырмалар генерациясы және онлайн компилятор арқылы Python бағдарламалауын меңгер.</p>
+    <h2>Python-ды практика арқылы үйрен</h2>
+    <p class="lead">Қазақ тіліндегі дәрістер, тапсырмалар, мини-тесттер және онлайн компилятор — бәрі бір платформада.</p>
 
     <div id="welcome" style="margin-top:18px;font-size:18px;color:#cfeff0"></div>
 
     <!-- Кнопка, которая появляется после входа — пользователь сам решает когда идти к материалам -->
-    <button id="startLearning" class="start-btn" style="display:none">Оқуды бастау</button>
     <section class="home-calendar">
   <div class="calendar-head">
     <button id="prevMonth">‹</button>
@@ -143,7 +142,7 @@
           profileWrapper.style.display = 'flex';
           const initial = user.trim().charAt(0).toUpperCase() || 'U';
           profileBtn.textContent = initial;
-          startBtn.style.display = 'inline-block';
+          startBtn.style.display = 'none';
           startBtn.textContent = role === 'teacher'
             ? 'Перейти в панель преподавателя'
             : 'Начать обучение (Материалы)';
