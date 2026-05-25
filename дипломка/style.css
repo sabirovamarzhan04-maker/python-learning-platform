@@ -1705,24 +1705,7 @@ tr:last-child td { border-bottom: none; }
     border-radius: 0 0 40px 40px;
 }
 
-.hero-background::before{
-    content: "";
-    position: absolute;
-    inset: 0;
 
-    background:
-        linear-gradient(
-            rgba(248,248,255,0.82),
-            rgba(248,248,255,0.82)
-        ),
-        url("/static/frontend/images/light-bg.png");
-
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-
-    z-index: -1;
-}
 /* ===== BACKGROUNDS FINAL ===== */
 
 body{
