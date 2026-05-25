@@ -1499,6 +1499,8 @@ tr:last-child td { border-bottom: none; }
   border-radius:24px;
   padding:24px;
   box-shadow:var(--shadow-md);
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(10px);
 }
 
 .calendar-head{
@@ -1716,4 +1718,18 @@ tr:last-child td { border-bottom: none; }
     background-repeat: no-repeat;
 
     z-index: -1;
+}
+main.hero-background{
+    background:
+        linear-gradient(
+            rgba(248,248,255,0.72),
+            rgba(248,248,255,0.72)
+        ),
+        url("/static/frontend/images/python-bg.png") !important;
+
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+
+    border-radius: 0 0 40px 40px;
 }
