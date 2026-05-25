@@ -1709,7 +1709,7 @@ tr:last-child td { border-bottom: none; }
             rgba(248,248,255,0.82),
             rgba(248,248,255,0.82)
         ),
-        url("frontend/images/python-bg.png")
+        url("/static/frontend/images/python-bg.png")
 
     background-size: cover;
     background-position: center;
