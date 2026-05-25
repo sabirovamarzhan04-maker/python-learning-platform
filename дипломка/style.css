@@ -1758,3 +1758,18 @@ main.hero-background{
 [data-theme="dark"] .weekdays span{
   color: #1e293b !important;
 }
+/* Dark mode calendar lines */
+[data-theme="dark"] .home-calendar {
+  background: rgba(255, 255, 255, 0.96) !important;
+}
+
+[data-theme="dark"] .calendar-day {
+  border: 1px solid rgba(30, 41, 59, 0.14) !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+}
+
+[data-theme="dark"] .weekdays span,
+[data-theme="dark"] .calendar-day strong,
+[data-theme="dark"] .calendar-head h3 {
+  color: #1e293b !important;
+}
