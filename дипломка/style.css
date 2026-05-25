@@ -1785,3 +1785,22 @@ body{
     linear-gradient(rgba(5,8,25,0.35), rgba(5,8,25,0.35)),
     url("/static/images/dark-bg.png") center top / cover no-repeat fixed !important;
 }
+body{
+  background-image:
+    linear-gradient(rgba(248,248,255,0.72), rgba(248,248,255,0.72)),
+    url("/static/images/light-bg.png") !important;
+  background-size: cover !important;
+  background-position: center top !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+[data-theme="dark"] body{
+  background-image:
+    linear-gradient(rgba(5,8,25,0.35), rgba(5,8,25,0.35)),
+    url("/static/images/dark-bg.png") !important;
+  background-size: cover !important;
+  background-position: center top !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
