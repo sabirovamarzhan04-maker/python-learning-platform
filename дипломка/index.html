@@ -132,29 +132,37 @@
         roleBlock.style.display = 'none'; // при входе выбор роли не нужен
       }
 
-      function updateUI() {
-        const user = localStorage.getItem('username');
-        const role = localStorage.getItem('role') || 'student';
-        if (user) {
-          const roleLabel = role === 'teacher' ? 'преподаватель' : 'ученик';
-          welcome.textContent = `Привет, ${user}! (${roleLabel})`;
-          authBtn.style.display = 'none';
-          profileWrapper.style.display = 'flex';
-          const initial = user.trim().charAt(0).toUpperCase() || 'U';
-          profileBtn.textContent = initial;
-          startBtn.style.display = 'none';
-          startBtn.textContent = role === 'teacher'
-            ? 'Перейти в панель преподавателя'
-            : 'Начать обучение (Материалы)';
-        } else {
-          welcome.textContent = '';
-          authBtn.textContent = 'Войти / Регистрация';
-          authBtn.style.display = 'inline-block';
-          profileWrapper.style.display = 'none';
-          startBtn.style.display = 'none';
-        }
-      }
+function updateUI() {
+  const user = localStorage.getItem('username');
+  const role = localStorage.getItem('role') || 'student';
 
+  if (user) {
+    const roleLabel = role === 'teacher' ? 'преподаватель' : 'ученик';
+
+    if (welcome) welcome.textContent = `Привет, ${user}! (${roleLabel})`;
+    if (authBtn) authBtn.style.display = 'none';
+    if (profileWrapper) profileWrapper.style.display = 'flex';
+
+    const initial = user.trim().charAt(0).toUpperCase() || 'U';
+    if (profileBtn) profileBtn.textContent = initial;
+
+    if (startBtn) {
+      startBtn.style.display = 'none';
+      startBtn.textContent = role === 'teacher'
+        ? 'Перейти в панель преподавателя'
+        : 'Начать обучение (Материалы)';
+    }
+
+  } else {
+    if (welcome) welcome.textContent = '';
+    if (authBtn) {
+      authBtn.textContent = 'Войти / Регистрация';
+      authBtn.style.display = 'inline-block';
+    }
+    if (profileWrapper) profileWrapper.style.display = 'none';
+    if (startBtn) startBtn.style.display = 'none';
+  }
+}
       // Открытие/выход
       authBtn.addEventListener('click', () => {
         modal.style.display = 'flex';
@@ -259,14 +267,6 @@
       });
 
       // кнопка "Начать обучение" ведёт на страницу материалов
-      startBtn.addEventListener('click', () => {
-        const role = localStorage.getItem('role') || 'student';
-        if (role === 'teacher') {
-          window.location.href = '/static/all_results.html';
-        } else {
-          window.location.href = '/static/materials.html';
-        }
-      });
 
       // Закрываем модалку кликом вне её
       window.addEventListener('click', (e) => {
@@ -274,10 +274,11 @@
       });
 
       // Профиль: переход на страницу профиля
-      profileBtn.addEventListener('click', () => {
-        window.location.href = '/static/profile.html';
-      });
-
+if(profileBtn){
+  profileBtn.addEventListener('click', () => {
+    window.location.href = '/static/profile.html';
+  });
+}
       // init
       updateUI();
       const monthTitle = document.getElementById("monthTitle");
