@@ -1685,3 +1685,11 @@ tr:last-child td { border-bottom: none; }
   font-size:15px;
   margin-top:15px;
 }
+.video-btn{
+    background: linear-gradient(135deg,#ff4d8d,#ff7ab6);
+    color:white;
+}
+
+.video-btn:hover{
+    transform: translateY(-2px);
+}
