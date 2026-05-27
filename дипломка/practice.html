@@ -409,6 +409,7 @@
             answers: JSON.stringify(answersArray)
           })
         });
+        localStorage.setItem("completed_" + topic, "true");
       } catch (e) {
         // Silently ignore
       }
