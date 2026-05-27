@@ -1779,3 +1779,15 @@ main.hero-background .lead{
     background: rgba(15, 23, 42, 0.95) !important;
     color: white !important;
 }
+.locked-topic{
+  opacity: 0.55;
+  filter: grayscale(0.4);
+  position: relative;
+}
+
+.lock-label{
+  margin-top: 12px;
+  color: #ef4444;
+  font-weight: 700;
+  font-size: 13px;
+}
