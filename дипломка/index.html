@@ -93,6 +93,10 @@
           </label>
         </div>
       </div>
+      <div class="form-field" id="teacherCodeBlock" style="display:none;">
+        <label for="teacherCode">Мұғалім коды</label>
+        <input id="teacherCode" type="password" placeholder="Мұғалім кодын енгізіңіз" />
+      </div>
 
       <div class="modal-row">
         <button id="submitForm" class="btn-primary">Кіру</button>
@@ -122,6 +126,9 @@
       const startBtn = document.getElementById('startLearning');
       const modalInfo = document.getElementById('modalInfo');
       const roleInputs = document.getElementsByName('role');
+      const teacherCodeBlock = document.getElementById('teacherCodeBlock');
+      const teacherCodeInput = document.getElementById('teacherCode');
+      const TEACHER_CODE = "teacher2026";
       const profileWrapper = document.getElementById('profileWrapper');
       const profileBtn = document.getElementById('profileBtn');
 
@@ -174,6 +181,14 @@ function updateUI() {
 
       // Переключение режима
       switchMode.addEventListener('click', () => {
+        roleInputs.forEach(r => {
+          r.addEventListener('change', () => {
+            teacherCodeBlock.style.display =
+              r.value === 'teacher' && r.checked
+                ? 'block'
+                : 'none';
+          });
+        });
         if (mode === 'login') {
           mode = 'register';
           formTitle.textContent = 'Регистрация';
@@ -203,9 +218,25 @@ function updateUI() {
           modalInfo.textContent = 'Заполните имя пользователя и email.';
           return;
         }
+        if (!/^[A-Za-zА-Яа-яӘәІіҢңҒғҮүҰұҚқӨөҺһ\s]+$/.test(username)) {
+          modalInfo.textContent = 'Пайдаланушы аты тек әріптерден тұруы керек.';
+          return;
+        }
 
         try {
           if (mode === 'register') {
+            if (selectedRole === 'teacher') {
+
+              if (!teacherCodeInput.value.trim()) {
+                modalInfo.textContent = 'Мұғалім кодын енгізіңіз.';
+                return;
+              }
+
+              if (teacherCodeInput.value.trim() !== TEACHER_CODE) {
+                modalInfo.textContent = 'Мұғалім коды қате.';
+                return;
+              }
+            }
             // регистрация
             const res = await fetch(
               `https://python-learning-platform-1.onrender.com/add_user/?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&role=${encodeURIComponent(selectedRole)}`,
