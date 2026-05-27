@@ -1261,8 +1261,8 @@ def get_lecture_text(topic_id: str) -> str:
 @app.post("/generate_tasks/")
 def generate_tasks(req: TaskRequest):
     topic = req.topic
-    if topic in QUIZZES:
-        return {"topic": topic, "questions": QUIZZES[topic]}
+    #if topic in QUIZZES:
+        #return {"topic": topic, "questions": QUIZZES[topic]}
     internal_topic = QUIZ_MAPPING.get(topic, topic)
     lecture_content = get_lecture_text(topic)
     context_msg = "Сен Python мұғалімісің. Берілген тақырып бойынша студентке арналған 10 қысқа ЖӘНЕ БІР-БІРІНЕН ЕРЕКШЕ сұрақ тізімін JSON форматында қайтар.\n"
