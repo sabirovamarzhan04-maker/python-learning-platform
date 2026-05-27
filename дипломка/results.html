@@ -6,10 +6,10 @@
 <title>Нәтижелер</title>
 <link rel="stylesheet" href="style.css" />
 <script src="theme.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
-  <header>
+<header>
   <h1>Python Learning</h1>
   <nav>
     <a href="/static/index.html">Басты бет</a>
@@ -21,21 +21,6 @@
 
 <main>
   <h2>Оқу үлгерімі мен нәтижелер</h2>
-  
-  <div id="dashboard" class="dashboard-grid" style="display:none;">
-    <div class="chart-card">
-      <h3>Оқу үлгерімі (Learning Curve)</h3>
-      <div class="chart-container-inner">
-        <canvas id="learningCurveChart"></canvas>
-      </div>
-    </div>
-    <div class="chart-card">
-      <h3>Тақырыптарды меңгеру</h3>
-      <div class="chart-container-inner">
-        <canvas id="topicCompletionChart"></canvas>
-      </div>
-    </div>
-  </div>
 
   <div id="resultsContainer">
     <p class="no-results">Нәтижелер жүктелуде...</p>
@@ -46,166 +31,182 @@
 const API = "https://python-learning-platform-1.onrender.com";
 const username = localStorage.getItem("username");
 const email = localStorage.getItem("email");
+const container = document.getElementById("resultsContainer");
 
 if (!username || !email) {
   alert("Алдымен аккаунтқа кіріңіз!");
   window.location.href = "/static/index.html";
 }
-const container = document.getElementById("resultsContainer");
-const dashboard = document.getElementById("dashboard");
 
-function extractScore(feedback) {
-  if (!feedback) return 0;
-  const match = feedback.match(/(\d+(?:\.\d+)?)/);
-  if (match) {
-    let s = parseFloat(match[1]);
-    return s > 10 ? 10 : s;
-  }
-  return 0;
+const topicNames = {
+  "1.1.1": "Python тілінің анықтамасы",
+  "1.1.2": "Сызықты және шартты алгоритмдер",
+  "1.2.1": "Цикл операторы",
+  "1.2.2": "Цикл операторы while",
+  "1.2.3": "Цикл және функциялар",
+  "1.3.1": "Тізімнің негізгі түсініктері",
+  "1.3.2": "Бірөлшемді тізімдер",
+  "2.1.1": "Массивтің құрылымы",
+  "2.1.2": "Массивті сұрыптау",
+  "2.2.1": "Екі өлшемді массивтер",
+  "2.2.2": "NumPy массивтері",
+  "2.3.1": "Рекурсия",
+  "2.3.2": "Жолдар",
+  "2.3.3": "Сөздіктер",
+  "2.3.4": "Кортеждер"
+};
+
+const topicOrder = Object.keys(topicNames);
+
+function percent(correct, total){
+  if (!total || total === 0) return 0;
+  return Math.round((correct / total) * 100);
 }
 
-async function loadResults() {
+function cleanTopic(topic){
+  return String(topic || "").replace("_practice", "");
+}
+
+function progressRow(topic, value){
+  return `
+    <div class="progress-row">
+      <div class="progress-title">
+        <b>${topic}</b>
+        <span>${topicNames[topic] || ""}</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${value}%"></div>
+      </div>
+      <strong>${value}%</strong>
+    </div>
+  `;
+}
+
+async function loadResults(){
   try {
     const [resResults, resProgress] = await Promise.all([
-      fetch(`${API}/results/?username=${username}&email=${email}`),
-      fetch(`${API}/progress/?username=${username}&email=${email}`)
+      fetch(`${API}/results/?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}`),
+      fetch(`${API}/progress/?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}`)
     ]);
 
     const data = await resResults.json();
     const progress = await resProgress.json();
 
-    if ((!data.results || data.results.length === 0) && (!progress.topics || progress.topics.length === 0)) {
-      container.innerHTML = `<p class="no-results">Сізде әзірге нәтижелер жоқ 😔</p>`;
-      return;
-    }
-
-    dashboard.style.display = "grid";
-
     const overall = progress.overall || {};
     const topics = progress.topics || [];
-    
-    // Render Charts
-    renderCharts(data.results, topics);
+    const results = data.results || [];
 
-    let html = `
-      <div class="card" style="margin-bottom: 30px;">
-        <h3 style="margin-top:0; color: var(--accent);">Орташа көрсеткіштер</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-            <div>
-                <div style="color: var(--text-muted); font-size: 14px;">Орташа балл</div>
-                <div style="font-size: 24px; font-weight: 800; color: #fff;">${overall.avg_score ? overall.avg_score.toFixed(1) : '0'} / 10</div>
-            </div>
-            <div>
-                <div style="color: var(--text-muted); font-size: 14px;">Тапсырмалар</div>
-                <div style="font-size: 24px; font-weight: 800; color: #fff;">${overall.tasks_total || 0}</div>
-            </div>
-            <div>
-                <div style="color: var(--text-muted); font-size: 14px;">Меңгеру деңгейі</div>
-                <div style="font-size: 24px; font-weight: 800; color: var(--success);">${overall.avg_percent ? overall.avg_percent.toFixed(0) : '0'}%</div>
-            </div>
-        </div>
-      </div>
+    let testMap = {};
+    let practiceMap = {};
 
-      <table>
-        <thead>
+    topics.forEach(t => {
+      const topic = cleanTopic(t.topic);
+      const p = Math.round(t.avg_percent || 0);
+      if (String(t.topic).includes("_practice")) {
+        practiceMap[topic] = p;
+      } else {
+        testMap[topic] = p;
+      }
+    });
+
+    let gradesHtml = "";
+
+    if (topics.length > 0) {
+      topics.forEach(t => {
+        const topic = cleanTopic(t.topic);
+        const isPractice = String(t.topic).includes("_practice");
+
+        gradesHtml += `
           <tr>
-            <th>Тақырып</th>
-            <th>Жауап (код)</th>
-            <th>Пікір мен баға</th>
+            <td><b>${topic}</b><br><span>${topicNames[topic] || ""}</span></td>
+            <td>${isPractice ? "Тапсырма" : "Мини-тест"}</td>
+            <td>${t.correct || 0} / ${t.total || 0}</td>
+            <td>${Math.round(t.avg_percent || 0)}%</td>
+            <td>${t.teacher_grade ?? "—"}</td>
+            <td>${t.teacher_comment || "—"}</td>
           </tr>
-        </thead>
-        <tbody>
-    `;
-
-    if (data.results && data.results.length > 0) {
-        data.results.forEach(r => {
-          html += `
-            <tr>
-              <td><span class="badge" style="background: var(--bg-input); border: 1px solid var(--border-color);">${r.topic}</span></td>
-              <td><pre style="margin:0; padding: 10px;">${r.answer || "-"}</pre></td>
-              <td class="feedback">${r.feedback || "—"}</td>
-            </tr>
-          `;
-        });
+        `;
+      });
     } else {
-        html += `<tr><td colspan="3" style="text-align:center; padding: 20px; color: var(--text-muted);">Практикалық тапсырмалар әлі орындалмаған</td></tr>`;
+      gradesHtml = `<tr><td colspan="6">Әзірге баға жоқ</td></tr>`;
     }
 
-    html += "</tbody></table>";
-    container.innerHTML = html;
+    const testRows = topicOrder.map(t => progressRow(t, testMap[t] || 0)).join("");
+    const practiceRows = topicOrder.map(t => progressRow(t, practiceMap[t] || 0)).join("");
 
-  } catch (err) {
-    container.innerHTML = `<p class="no-results">⚠ Серверге қосылу кезінде қате орын алды.</p>`;
+    container.innerHTML = `
+      <section class="card results-summary-card">
+        <h3>Орташа көрсеткіштер</h3>
+        <div class="summary-grid">
+          <div>
+            <span>Орташа балл</span>
+            <b>${overall.avg_score ? overall.avg_score.toFixed(1) : "0"} / 10</b>
+          </div>
+          <div>
+            <span>Тапсырмалар</span>
+            <b>${overall.tasks_total || 0}</b>
+          </div>
+          <div>
+            <span>Меңгеру деңгейі</span>
+            <b class="success-text">${overall.avg_percent ? overall.avg_percent.toFixed(0) : "0"}%</b>
+          </div>
+        </div>
+      </section>
+
+      <section class="results-layout">
+        <div class="card">
+          <h3>🏆 Рейтинг</h3>
+          <p class="muted">Бұл жерде кейін барлық оқушылардың рейтингі шығады.</p>
+          <div class="rating-item">
+            <span>1</span>
+            <b>${username}</b>
+            <em>${overall.avg_percent ? overall.avg_percent.toFixed(0) : "0"}%</em>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>📊 Тақырып бойынша меңгеру</h3>
+
+          <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('test')">Тест</button>
+            <button class="tab-btn" onclick="showTab('practice')">Тапсырма</button>
+          </div>
+
+          <div id="testTab" class="tab-content">${testRows}</div>
+          <div id="practiceTab" class="tab-content" style="display:none;">${practiceRows}</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Менің бағаларым</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Тақырып</th>
+              <th>Түрі</th>
+              <th>Дұрыс жауап</th>
+              <th>Пайыз</th>
+              <th>Мұғалім бағасы</th>
+              <th>Пікір</th>
+            </tr>
+          </thead>
+          <tbody>${gradesHtml}</tbody>
+        </table>
+      </section>
+    `;
+
+  } catch(err) {
     console.error(err);
+    container.innerHTML = `<p class="no-results">⚠ Нәтижелерді жүктеу кезінде қате шықты.</p>`;
   }
 }
 
-function renderCharts(results, topics) {
-    // 1. Learning Curve (Scores over time)
-    const ctxLine = document.getElementById('learningCurveChart').getContext('2d');
-    const labels = results.map((_, i) => `Тапсырма ${i + 1}`);
-    const scores = results.map(r => extractScore(r.feedback));
+function showTab(type){
+  document.getElementById("testTab").style.display = type === "test" ? "block" : "none";
+  document.getElementById("practiceTab").style.display = type === "practice" ? "block" : "none";
 
-    new Chart(ctxLine, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Баға (0-10)',
-                data: scores,
-                 borderColor: '#6366f1',
-                backgroundColor: 'rgba(99, 102, 241, 0.08)',
-                borderWidth: 3,
-                tension: 0.4,
-                fill: true,
-                pointBackgroundColor: '#fff',
-                pointBorderColor: '#6366f1',
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { min: 0, max: 10, ticks: { color: '#64748b' }, grid: { color: 'rgba(0,0,0,0.05)' } },
-                x: { ticks: { color: '#64748b' }, grid: { display: false } }
-            },
-            plugins: {
-                legend: { display: false }
-            }
-        }
-    });
-
-    // 2. Topic Completion (Topic-wise percents)
-    const ctxPie = document.getElementById('topicCompletionChart').getContext('2d');
-    const topicLabels = topics.map(t => t.topic);
-    const topicPercents = topics.map(t => t.avg_percent || 0);
-
-    new Chart(ctxPie, {
-        type: 'doughnut',
-        data: {
-            labels: topicLabels,
-            datasets: [{
-                data: topicPercents,
-                backgroundColor: [
-                    '#8a2be2', '#ff007f', '#00f0ff', '#10b981', '#f59e0b', '#3b82f6'
-                ],
-                borderWidth: 0,
-                hoverOffset: 10
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: { color: '#64748b', padding: 20, font: { size: 12 } }
-                }
-            },
-            cutout: '70%'
-        }
-    });
+  document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+  event.target.classList.add("active");
 }
 
 loadResults();
