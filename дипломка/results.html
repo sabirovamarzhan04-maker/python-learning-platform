@@ -7,6 +7,15 @@
 <link rel="stylesheet" href="style.css" />
 <script src="theme.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const username = localStorage.getItem("username");
+  const email = localStorage.getItem("email");
+
+  if (!username || !email) {
+    alert("Алдымен аккаунтқа кіріңіз!");
+    window.location.href = "/static/index.html";
+  }
+</script>
 </head>
 <body>
 
