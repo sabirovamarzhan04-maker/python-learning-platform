@@ -84,18 +84,25 @@ function progressRow(topic, value){
 
 async function loadResults(){
   try {
-    const [resResults, resProgress] = await Promise.all([
+    const [resResults, resProgress, resLeaderboard] = await Promise.all([
       fetch(`${API}/results/?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}`),
-      fetch(`${API}/progress/?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}`)
+      fetch(`${API}/progress/?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}`),
+      fetch(`${API}/leaderboard/`)
     ]);
 
     const data = await resResults.json();
     const progress = await resProgress.json();
-
+    const leaderboard = await resLeaderboard.json();
     const overall = progress.overall || {};
     const topics = progress.topics || [];
     const results = data.results || [];
-
+    const ratingHtml = (leaderboard.leaderboard || []).slice(0, 10).map((u, i) => `
+      <div class="rating-item">
+        <span>${i + 1}</span>
+        <b>${u.username}</b>
+        <em>${u.percent}%</em>
+      </div>
+    `).join("");
     let testMap = {};
     let practiceMap = {};
 
@@ -156,12 +163,10 @@ async function loadResults(){
       <section class="results-layout">
         <div class="card">
           <h3>🏆 Рейтинг</h3>
-          <p class="muted">Бұл жерде кейін барлық оқушылардың рейтингі шығады.</p>
-          <div class="rating-item">
-            <span>1</span>
-            <b>${username}</b>
-            <em>${overall.avg_percent ? overall.avg_percent.toFixed(0) : "0"}%</em>
-          </div>
+          <p class="muted">Оқушылардың жалпы нәтижесі бойынша рейтинг.</p>
+
+          ${ratingHtml || "<p class='muted'>Рейтинг әлі жоқ</p>"}
+        </div>
         </div>
 
         <div class="card">
@@ -210,6 +215,7 @@ function showTab(type){
 }
 
 loadResults();
+setInterval(loadResults, 5000);
 </script>
 
 </body>

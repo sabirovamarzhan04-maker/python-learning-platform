@@ -1181,6 +1181,43 @@ def get_teacher_topic_results(topic: str):
         })
     db.close()
     return {"topic": topic, "results": data}
+@app.get("/leaderboard/")
+def leaderboard():
+    db = SessionLocal()
+    rows = db.query(TopicQuizResult).all()
+
+    students = {}
+
+    for r in rows:
+        key = r.user.username
+
+        if key not in students:
+            students[key] = {
+                "username": r.user.username,
+                "email": r.user.email,
+                "points": 0,
+                "total": 0
+            }
+
+        percent = int((r.correct / r.total) * 100) if r.total else 0
+        teacher_percent = (r.teacher_grade * 10) if r.teacher_grade is not None else percent
+
+        students[key]["points"] += teacher_percent
+        students[key]["total"] += 1
+
+    result = []
+    for s in students.values():
+        avg = round(s["points"] / s["total"]) if s["total"] else 0
+        result.append({
+            "username": s["username"],
+            "email": s["email"],
+            "percent": avg
+        })
+
+    result.sort(key=lambda x: x["percent"], reverse=True)
+
+    db.close()
+    return {"leaderboard": result}
 
 
 @app.post("/teacher/set_grade/")
