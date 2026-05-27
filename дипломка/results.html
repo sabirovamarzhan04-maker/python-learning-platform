@@ -7,19 +7,20 @@
 <link rel="stylesheet" href="style.css" />
 <script src="theme.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-  const username = localStorage.getItem("username");
-  const email = localStorage.getItem("email");
+</head>
+<body>
+  <script>
+    const username = localStorage.getItem("username");
+    const email = localStorage.getItem("email");
 
   if (!username || !email) {
     alert("Алдымен аккаунтқа кіріңіз!");
     window.location.href = "/static/index.html";
+  } else {
+    loadResults();
   }
-</script>
-</head>
-<body>
-
-<header>
+  </script>
+  <header>
   <h1>Python Learning</h1>
   <nav>
     <a href="/static/index.html">Басты бет</a>
