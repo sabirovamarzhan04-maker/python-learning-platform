@@ -19,7 +19,15 @@
 </head>
 
 <body>
+  <script>
+    const username = localStorage.getItem("username");
+    const email = localStorage.getItem("email");
 
+    if (!username || !email) {
+      alert("Алдымен аккаунтқа кіріңіз!");
+      window.location.href = "/static/index.html";
+    }
+  </script>
   <header>
     <h1>Python Learning</h1>
     <nav>
