@@ -1801,8 +1801,12 @@ def get_progress(username: str, email: str):
                 "tasks_total": 0,
                 "tasks_scored": 0,
                 "sum_scores": 0.0,
+                "teacher_grade": q.teacher_grade,
+                "teacher_comment": q.teacher_comment,
+                "answers": q.answers,
+                "correct": q.correct,
+                "total": q.total,
             }
-
         topic_info = topics_data[q.topic]
         topic_info["tasks_total"] += q.total
         topic_info["tasks_scored"] += q.total
@@ -1824,6 +1828,11 @@ def get_progress(username: str, email: str):
             "tasks_scored": t["tasks_scored"],
             "avg_score": avg_score,
             "avg_percent": avg_percent,
+            "teacher_grade": t.get("teacher_grade"),
+            "teacher_comment": t.get("teacher_comment"),
+            "answers": t.get("answers"),
+            "correct": t.get("correct"),
+            "total": t.get("total"),
         }
         topics_stats.append(topic_stat)
 
@@ -1846,7 +1855,7 @@ def get_progress(username: str, email: str):
         },
         "topics": topics_stats,
         "weak_topics": weak_topics,
-    }
+    }   
 
 
 # -----------------------------------------
