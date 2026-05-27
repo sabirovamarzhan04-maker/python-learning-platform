@@ -328,9 +328,21 @@ const monthNames = [
 let currentDate = new Date();
 let selectedDateKey = "";
 
-function getNoteKey(dateKey) {
+function getEventKey(dateKey) {
   const user = localStorage.getItem("username") || "guest";
-  return `note_${user}_${dateKey}`;
+  return `calendar_events_${user}_${dateKey}`;
+}
+
+function getEvents(dateKey) {
+  try {
+    return JSON.parse(localStorage.getItem(getEventKey(dateKey))) || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveEvents(dateKey, events) {
+  localStorage.setItem(getEventKey(dateKey), JSON.stringify(events));
 }
 
 function renderCalendar() {
@@ -358,36 +370,134 @@ function renderCalendar() {
     dayBox.className = "calendar-day";
 
     const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const savedNote = localStorage.getItem(getNoteKey(dateKey));
+    const events = getEvents(dateKey);
+
+    const eventsPreview = events.slice(0, 2).map(ev => `
+      <div class="calendar-event ${ev.done ? "done" : ""} ${ev.type}">
+        ${ev.title}
+      </div>
+    `).join("");
 
     dayBox.innerHTML = `
       <strong>${day}</strong>
-      ${savedNote ? '<span class="note-dot"></span>' : ''}
+      ${eventsPreview}
+      ${events.length > 2 ? `<small class="more-events">+${events.length - 2}</small>` : ""}
     `;
 
     dayBox.addEventListener("click", () => {
       selectedDateKey = dateKey;
       selectedDateTitle.textContent = `${day} ${monthNames[month]} ${year}`;
-      noteText.value = localStorage.getItem(getNoteKey(dateKey)) || "";
 
       document.querySelectorAll(".calendar-day").forEach(d => d.classList.remove("selected"));
       dayBox.classList.add("selected");
+
+      renderEventPanel(dateKey);
     });
 
     calendarGrid.appendChild(dayBox);
   }
 }
 
-saveNote.addEventListener("click", () => {
-  if (!selectedDateKey) {
-    alert("Алдымен күнді таңдаңыз");
-    return;
+function renderEventPanel(dateKey) {
+  const events = getEvents(dateKey);
+
+  let html = `
+    <div class="event-form">
+      <input id="eventTitle" type="text" placeholder="Атауы: Python тесті">
+      <textarea id="eventDesc" placeholder="Сипаттама: 1.1.1 тақырыбын қайталау"></textarea>
+
+      <select id="eventType">
+        <option value="test">Тест</option>
+        <option value="task">Тапсырма</option>
+        <option value="deadline">Deadline</option>
+        <option value="project">Жоба</option>
+      </select>
+
+      <button id="addEventBtn">Қосу</button>
+    </div>
+
+    <div class="event-list">
+      ${events.length === 0 ? `<p class="muted">Бұл күнге жазба жоқ</p>` : ""}
+      ${events.map((ev, index) => `
+        <div class="event-card ${ev.type} ${ev.done ? "done" : ""}">
+          <div>
+            <b>${ev.title}</b>
+            <span>${ev.desc || ""}</span>
+            <small>${eventTypeLabel(ev.type)}</small>
+          </div>
+
+          <label class="event-check">
+            <input type="checkbox" ${ev.done ? "checked" : ""} onchange="toggleEventDone('${dateKey}', ${index})">
+            Орындалды
+          </label>
+
+          <button class="event-delete" onclick="deleteEvent('${dateKey}', ${index})">Өшіру</button>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  noteText.style.display = "none";
+  saveNote.style.display = "none";
+
+  const noteBox = document.querySelector(".note-box");
+  let eventPanel = document.getElementById("eventPanel");
+
+  if (!eventPanel) {
+    eventPanel = document.createElement("div");
+    eventPanel.id = "eventPanel";
+    noteBox.appendChild(eventPanel);
   }
 
-  localStorage.setItem(getNoteKey(selectedDateKey), noteText.value);
+  eventPanel.innerHTML = html;
+
+  document.getElementById("addEventBtn").addEventListener("click", () => {
+    const title = document.getElementById("eventTitle").value.trim();
+    const desc = document.getElementById("eventDesc").value.trim();
+    const type = document.getElementById("eventType").value;
+
+    if (!title) {
+      alert("Event атауын жазыңыз");
+      return;
+    }
+
+    const updated = getEvents(dateKey);
+    updated.push({
+      title,
+      desc,
+      type,
+      done: false
+    });
+
+    saveEvents(dateKey, updated);
+    renderCalendar();
+    renderEventPanel(dateKey);
+  });
+}
+
+function eventTypeLabel(type) {
+  if (type === "test") return "Тест";
+  if (type === "task") return "Тапсырма";
+  if (type === "deadline") return "Deadline";
+  if (type === "project") return "Жоба";
+  return "Жазба";
+}
+
+window.toggleEventDone = function(dateKey, index) {
+  const events = getEvents(dateKey);
+  events[index].done = !events[index].done;
+  saveEvents(dateKey, events);
   renderCalendar();
-  alert("Жазба сақталды!");
-});
+  renderEventPanel(dateKey);
+};
+
+window.deleteEvent = function(dateKey, index) {
+  const events = getEvents(dateKey);
+  events.splice(index, 1);
+  saveEvents(dateKey, events);
+  renderCalendar();
+  renderEventPanel(dateKey);
+};
 
 prevMonth.addEventListener("click", () => {
   currentDate.setMonth(currentDate.getMonth() - 1);

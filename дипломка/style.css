@@ -1913,3 +1913,125 @@ main.hero-background .lead{
     grid-template-columns:1fr;
   }
 }
+.calendar-event{
+  margin-top:6px;
+  padding:3px 6px;
+  border-radius:8px;
+  font-size:11px;
+  font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  color:white;
+}
+
+.calendar-event.test,
+.event-card.test{
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+}
+
+.calendar-event.task,
+.event-card.task{
+  background:linear-gradient(135deg,#06b6d4,#3b82f6);
+}
+
+.calendar-event.deadline,
+.event-card.deadline{
+  background:linear-gradient(135deg,#ef4444,#f97316);
+}
+
+.calendar-event.project,
+.event-card.project{
+  background:linear-gradient(135deg,#10b981,#22c55e);
+}
+
+.calendar-event.done{
+  opacity:.55;
+  text-decoration:line-through;
+}
+
+.more-events{
+  display:block;
+  margin-top:4px;
+  color:var(--text-muted);
+  font-size:11px;
+}
+
+.event-form{
+  display:grid;
+  gap:10px;
+  margin-top:14px;
+}
+
+.event-form input,
+.event-form textarea,
+.event-form select{
+  width:100%;
+}
+
+.event-list{
+  margin-top:18px;
+  display:grid;
+  gap:12px;
+}
+
+.event-card{
+  color:white;
+  padding:14px;
+  border-radius:16px;
+  display:grid;
+  grid-template-columns:1fr auto auto;
+  gap:12px;
+  align-items:center;
+}
+
+.event-card b{
+  display:block;
+  font-size:15px;
+}
+
+.event-card span{
+  display:block;
+  opacity:.9;
+  font-size:13px;
+  margin-top:3px;
+}
+
+.event-card small{
+  display:inline-block;
+  margin-top:6px;
+  background:rgba(255,255,255,.18);
+  padding:3px 8px;
+  border-radius:999px;
+}
+
+.event-card.done{
+  opacity:.6;
+}
+
+.event-check{
+  font-size:13px;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.event-delete{
+  background:rgba(255,255,255,.18) !important;
+  box-shadow:none !important;
+  padding:8px 10px !important;
+}
+
+[data-theme="dark"] .event-form input,
+[data-theme="dark"] .event-form textarea,
+[data-theme="dark"] .event-form select{
+  background:rgba(15,23,42,.95) !important;
+  color:white !important;
+}
+
+@media(max-width:768px){
+  .event-card{
+    grid-template-columns:1fr;
+  }
+}
