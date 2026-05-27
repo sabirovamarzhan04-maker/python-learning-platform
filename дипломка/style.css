@@ -2035,3 +2035,40 @@ main.hero-background .lead{
     grid-template-columns:1fr;
   }
 }
+/* DARK CALENDAR EVENT FIX */
+[data-theme="dark"] .home-calendar,
+[data-theme="dark"] .note-box{
+  background: rgba(255,255,255,0.94) !important;
+  color: #1e293b !important;
+}
+
+[data-theme="dark"] #selectedDateTitle,
+[data-theme="dark"] .home-calendar h3,
+[data-theme="dark"] .calendar-head h3,
+[data-theme="dark"] .weekdays span,
+[data-theme="dark"] .calendar-day,
+[data-theme="dark"] .calendar-day strong{
+  color: #1e293b !important;
+}
+
+[data-theme="dark"] .calendar-day{
+  background: rgba(255,255,255,0.72) !important;
+  border: 1px solid rgba(30,41,59,0.18) !important;
+}
+
+[data-theme="dark"] .calendar-day.empty{
+  background: rgba(255,255,255,0.25) !important;
+}
+
+[data-theme="dark"] .event-form input,
+[data-theme="dark"] .event-form textarea,
+[data-theme="dark"] .event-form select{
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border: 1px solid rgba(30,41,59,0.18) !important;
+}
+
+[data-theme="dark"] .event-form input::placeholder,
+[data-theme="dark"] .event-form textarea::placeholder{
+  color: rgba(30,41,59,0.55) !important;
+}
