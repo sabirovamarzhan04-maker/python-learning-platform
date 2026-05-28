@@ -1398,7 +1398,6 @@ def generate_tasks(req: TaskRequest):
         "- Жаңа немесе advanced Python мүмкіндіктерін қоспа.\n"
         "- lambda, class, recursion, decorator, async, try/except қолданба.\n"
         "- Код 7-9 сынып оқушысының деңгейіне сай болсын.\n"
-        ```
 
         )
 
