@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="kk">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Практикалық тапсырмалар</title>
+  <title>РџСЂР°РєС‚РёРєР°Р»С‹Т› С‚Р°РїСЃС‹СЂРјР°Р»Р°СЂ</title>
   <link rel="stylesheet" href="style.css" />
   <script src="theme.js"></script>
 </head>
@@ -14,30 +14,32 @@
   <header>
     <h1>Python Learning</h1>
     <nav>
-      <a href="/static/index.html">Басты бет</a>
-      <a href="/static/materials.html">Дәрістер</a>
-      <a href="/static/playground.html">Онлайн компилятор</a>
-      <a href="/static/results.html">Нәтижелер</a>
+      <a href="/static/index.html">Р‘Р°СЃС‚С‹ Р±РµС‚</a>
+      <a href="/static/materials.html">Р”У™СЂС–СЃС‚РµСЂ</a>
+      <a href="/static/playground.html">РћРЅР»Р°Р№РЅ РєРѕРјРїРёР»СЏС‚РѕСЂ</a>
+      <a href="/static/results.html">РќУ™С‚РёР¶РµР»РµСЂ</a>
     </nav>
   </header>
 
   <main>
-    <h2 id="topicTitle">Тақырып анықталмады</h2>
-    <div id="tasks">Тапсырма жүктелуде...</div>
+    <h2 id="topicTitle">РўР°Т›С‹СЂС‹Рї Р°РЅС‹Т›С‚Р°Р»РјР°РґС‹</h2>
+    <div id="tasks">РўР°РїСЃС‹СЂРјР° Р¶ТЇРєС‚РµР»СѓРґРµ...</div>
 
     <div id="answerSection" style="display:none;">
       <div id="answerArea"></div>
-      <button id="sendBtn" onclick="checkAnswer()">Келесі ➜</button>
+      <button id="sendBtn" onclick="checkAnswer()">РљРµР»РµСЃС– вћњ</button>
       <div id="feedback"></div>
     </div>
   </main>
 
   <footer>
-    © 2026 Python Learning. Барлық құқықтар қорғалған.
+    В© 2026 Python Learning. Р‘Р°СЂР»С‹Т› Т›Т±Т›С‹Т›С‚Р°СЂ Т›РѕСЂТ“Р°Р»Т“Р°РЅ.
   </footer>
 
   <script>
-    const API = "https://python-learning-platform-1.onrender.com";
+    const API = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+      ? window.location.origin
+      : "https://python-learning-platform-1.onrender.com";
     const params = new URLSearchParams(window.location.search);
     const topic = params.get("topic");
     const username = localStorage.getItem("username") || "student1";
@@ -56,14 +58,14 @@
     let userAnswers = {};
 
     if (topic) {
-      title.textContent = "Тақырып: " + topic;
+      title.textContent = "РўР°Т›С‹СЂС‹Рї: " + topic;
     } else {
-      title.textContent = "Тақырып таңдалмады";
+      title.textContent = "РўР°Т›С‹СЂС‹Рї С‚Р°ТЈРґР°Р»РјР°РґС‹";
       tasksDiv.innerHTML = `
         <div class="practice-question-card">
-          <p>Бұл бетте ИИ-тапсырмаларды орындау үшін алдымен <b>Материалдар</b> бетінен нақты бір тақырыпты таңдауыңыз керек.</p>
+          <p>Р‘Т±Р» Р±РµС‚С‚Рµ РР-С‚Р°РїСЃС‹СЂРјР°Р»Р°СЂРґС‹ РѕСЂС‹РЅРґР°Сѓ ТЇС€С–РЅ Р°Р»РґС‹РјРµРЅ <b>РњР°С‚РµСЂРёР°Р»РґР°СЂ</b> Р±РµС‚С–РЅРµРЅ РЅР°Т›С‚С‹ Р±С–СЂ С‚Р°Т›С‹СЂС‹РїС‚С‹ С‚Р°ТЈРґР°СѓС‹ТЈС‹Р· РєРµСЂРµРє.</p>
           <br>
-          <button onclick="window.location.href='materials.html'">📚 Материалдар бетіне өту</button>
+          <button onclick="window.location.href='materials.html'">рџ“љ РњР°С‚РµСЂРёР°Р»РґР°СЂ Р±РµС‚С–РЅРµ У©С‚Сѓ</button>
         </div>
       `;
       answerSection.style.display = "none";
@@ -76,7 +78,7 @@
         const data = await res.json();
         const alreadyDone = data.results?.find(r => r.topic === topic && r.completed);
         if (alreadyDone) {
-          tasksDiv.innerHTML = `<div class="practice-question-card"><p>✅ Бұл тақырып бұрын орындалған.</p><p style="color: var(--text-muted); margin-top: 10px;">Жауап: ${alreadyDone.feedback}</p></div>`;
+          tasksDiv.innerHTML = `<div class="practice-question-card"><p>вњ… Р‘Т±Р» С‚Р°Т›С‹СЂС‹Рї Р±Т±СЂС‹РЅ РѕСЂС‹РЅРґР°Р»Т“Р°РЅ.</p><p style="color: var(--text-muted); margin-top: 10px;">Р–Р°СѓР°Рї: ${alreadyDone.feedback}</p></div>`;
           answerSection.style.display = "none";
           return true;
         }
@@ -90,13 +92,13 @@
       const done = await checkIfCompleted();
       if (done) return;
 
-      tasksDiv.innerHTML = `<div class="practice-question-card"><p>⏳ ИИ тапсырмаларды дайындап жатыр...</p></div>`;
+      tasksDiv.innerHTML = `<div class="practice-question-card"><p>вЏі РР С‚Р°РїСЃС‹СЂРјР°Р»Р°СЂРґС‹ РґР°Р№С‹РЅРґР°Рї Р¶Р°С‚С‹СЂ...</p></div>`;
 
       try {
         const res = await fetch(`${API}/generate_tasks/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ topic })
+          body: JSON.stringify({ topic, username, email })
         });
         const data = await res.json();
 
@@ -105,10 +107,10 @@
           currentTaskIndex = 0;
           showCurrentTask();
         } else {
-          tasksDiv.innerHTML = `<div class="practice-question-card"><p>⚠ Тапсырмаларды алу мүмкін болмады.</p></div>`;
+          tasksDiv.innerHTML = `<div class="practice-question-card"><p>вљ  РўР°РїСЃС‹СЂРјР°Р»Р°СЂРґС‹ Р°Р»Сѓ РјТЇРјРєС–РЅ Р±РѕР»РјР°РґС‹.</p></div>`;
         }
       } catch (e) {
-        tasksDiv.innerHTML = `<div class="practice-question-card"><p>⚠ Серверге қосылу мүмкін болмады.</p></div>`;
+        tasksDiv.innerHTML = `<div class="practice-question-card"><p>вљ  РЎРµСЂРІРµСЂРіРµ Т›РѕСЃС‹Р»Сѓ РјТЇРјРєС–РЅ Р±РѕР»РјР°РґС‹.</p></div>`;
       }
     }
 
@@ -125,9 +127,13 @@
       const num = currentTaskIndex + 1;
 
       // Build question card
-      let typeLabel = "Теория";
-      if (q.type === "test") typeLabel = "Тест";
-      else if (q.type === "code" || q.type === "code_fill") typeLabel = "Код";
+      let typeLabel = "РўРµРѕСЂРёСЏ";
+      if (q.type === "test") typeLabel = "РўРµСЃС‚";
+      else if (q.type === "code" || q.type === "code_fill") typeLabel = "РљРѕРґ";
+      else if (q.type === "matching") typeLabel = "РЎУ™Р№РєРµСЃС‚РµРЅРґС–СЂСѓ";
+      else if (q.type === "order_lines") typeLabel = "Р РµС‚С–РЅ С‚Р°Р±Сѓ";
+      else if (q.type === "find_error") typeLabel = "ТљР°С‚РµРЅС– С‚ТЇР·РµС‚Сѓ";
+      else if (q.type === "predict_output") typeLabel = "РќУ™С‚РёР¶РµРЅС– Р±РѕР»Р¶Р°Сѓ";
 
       let cardHtml = `
         <div class="practice-question-card">
@@ -137,7 +143,7 @@
       // Build answer area
       answerSection.style.display = "block";
       sendBtn.disabled = false;
-      sendBtn.textContent = currentTaskIndex < questions.length - 1 ? "Келесі ➜" : "Аяқтау ✓";
+      sendBtn.textContent = currentTaskIndex < questions.length - 1 ? "РљРµР»РµСЃС– вћњ" : "РђСЏТ›С‚Р°Сѓ вњ“";
 
       if (q.type === "test" && Array.isArray(q.options)) {
         // Radio buttons for test questions
@@ -160,31 +166,81 @@
         if (q.expected_output) {
           cardHtml += `
             <div class="practice-expected-output">
-              <b>Нәтиже:</b>
+              <b>РќУ™С‚РёР¶Рµ:</b>
               <pre>${escapeHtml(q.expected_output)}</pre>
             </div>
          `;
       }
         answerArea.innerHTML = `
           <div class="form-field practice-input-answer">
-            <label>Бос жерлерді толықтырыңыз (үтір арқылы):</label>
-            <input type="text" id="codeAnswer" placeholder="Мысалы: range, 6">
+            <label>Р‘РѕСЃ Р¶РµСЂР»РµСЂРґС– С‚РѕР»С‹Т›С‚С‹СЂС‹ТЈС‹Р· (ТЇС‚С–СЂ Р°СЂТ›С‹Р»С‹):</label>
+            <input type="text" id="codeAnswer" placeholder="РњС‹СЃР°Р»С‹: range, 6">
+          </div>
+        `;
+      } else if (q.type === "matching" && Array.isArray(q.left) && Array.isArray(q.right)) {
+        let matchHtml = '<div class="practice-options">';
+        q.left.forEach((leftText, idx) => {
+          matchHtml += `
+            <label>
+              <span>${idx + 1}. ${escapeHtml(leftText)}</span>
+              <select id="match_${idx}">
+                <option value="">Р–Р°СѓР°Рї С‚Р°ТЈРґР°ТЈС‹Р·</option>
+                ${q.right.map((rightText, rightIdx) => `<option value="${rightIdx}">${escapeHtml(rightText)}</option>`).join("")}
+              </select>
+            </label>
+          `;
+        });
+        matchHtml += '</div>';
+        cardHtml += matchHtml;
+        answerArea.innerHTML = '';
+      } else if (q.type === "order_lines" && Array.isArray(q.lines)) {
+        cardHtml += `
+          <div class="practice-code-template">${q.lines.map((line, idx) => `${idx + 1}. ${escapeHtml(line)}`).join("<br>")}</div>
+        `;
+        if (q.expected_output) {
+          cardHtml += `
+            <div class="practice-expected-output">
+              <b>РќУ™С‚РёР¶Рµ:</b>
+              <pre>${escapeHtml(q.expected_output)}</pre>
+            </div>
+          `;
+        }
+        answerArea.innerHTML = `
+          <div class="form-field practice-input-answer">
+            <label>Р”Т±СЂС‹СЃ СЂРµС‚С–РЅ РЅУ©РјС–СЂР»РµСЂРјРµРЅ Р¶Р°Р·С‹ТЈС‹Р·:</label>
+            <input type="text" id="orderAnswer" placeholder="РњС‹СЃР°Р»С‹: 2, 1, 4, 3">
+          </div>
+        `;
+      } else if ((q.type === "find_error" || q.type === "predict_output") && q.template) {
+        cardHtml += `<div class="practice-code-template">${escapeHtml(q.template)}</div>`;
+        if (q.expected_output && q.type === "find_error") {
+          cardHtml += `
+            <div class="practice-expected-output">
+              <b>РљТЇС‚С–Р»РµС‚С–РЅ РЅУ™С‚РёР¶Рµ:</b>
+              <pre>${escapeHtml(q.expected_output)}</pre>
+            </div>
+          `;
+        }
+        answerArea.innerHTML = `
+          <div class="form-field practice-input-answer">
+            <label>${q.type === "predict_output" ? "Р­РєСЂР°РЅТ“Р° С€С‹Т“Р°С‚С‹РЅ РЅУ™С‚РёР¶РµРЅС– Р¶Р°Р·С‹ТЈС‹Р·:" : "ТљР°С‚Рµ Р¶РѕР»РґС‹ТЈ РґТ±СЂС‹СЃ РЅТ±СЃТ›Р°СЃС‹РЅ Р¶Р°Р·С‹ТЈС‹Р·:"}</label>
+            <textarea id="interactiveAnswer" rows="3" placeholder="Р–Р°СѓР°Р±С‹ТЈС‹Р·РґС‹ РѕСЃС‹РЅРґР° Р¶Р°Р·С‹ТЈС‹Р·..."></textarea>
           </div>
         `;
       } else if (q.type === "theory") {
         // Open-ended theory question
         answerArea.innerHTML = `
           <div class="form-field practice-input-answer">
-            <label>Жауабыңыз:</label>
-            <textarea id="theoryAnswer" rows="3" placeholder="Жауабыңызды осында жазыңыз..."></textarea>
+            <label>Р–Р°СѓР°Р±С‹ТЈС‹Р·:</label>
+            <textarea id="theoryAnswer" rows="3" placeholder="Р–Р°СѓР°Р±С‹ТЈС‹Р·РґС‹ РѕСЃС‹РЅРґР° Р¶Р°Р·С‹ТЈС‹Р·..."></textarea>
           </div>
         `;
       } else {
         // Fallback - generic text input
         answerArea.innerHTML = `
           <div class="form-field practice-input-answer">
-            <label>Жауабыңыз:</label>
-            <textarea id="theoryAnswer" rows="3" placeholder="Жауабыңызды осында жазыңыз..."></textarea>
+            <label>Р–Р°СѓР°Р±С‹ТЈС‹Р·:</label>
+            <textarea id="theoryAnswer" rows="3" placeholder="Р–Р°СѓР°Р±С‹ТЈС‹Р·РґС‹ РѕСЃС‹РЅРґР° Р¶Р°Р·С‹ТЈС‹Р·..."></textarea>
           </div>
         `;
       }
@@ -202,7 +258,7 @@
       if (q.type === "test" && Array.isArray(q.options)) {
         const selected = document.querySelector("input[name='practiceAnswer']:checked");
         if (!selected) {
-          feedbackDiv.innerHTML = '<div class="practice-feedback wrong">⚠ Жауапты таңдаңыз!</div>';
+          feedbackDiv.innerHTML = '<div class="practice-feedback wrong">вљ  Р–Р°СѓР°РїС‚С‹ С‚Р°ТЈРґР°ТЈС‹Р·!</div>';
           return;
         }
         const selectedNum = parseInt(selected.value, 10);
@@ -236,7 +292,7 @@
       } else if ((q.type === "code" || q.type === "code_fill")) {
         const codeInput = document.getElementById("codeAnswer");
         if (!codeInput || !codeInput.value.trim()) {
-          feedbackDiv.innerHTML = '<div class="practice-feedback wrong">⚠ Жауапты жазыңыз!</div>';
+          feedbackDiv.innerHTML = '<div class="practice-feedback wrong">вљ  Р–Р°СѓР°РїС‚С‹ Р¶Р°Р·С‹ТЈС‹Р·!</div>';
           return;
         }
         userAnswer = codeInput.value.trim();
@@ -258,11 +314,58 @@
           correct = null; // can't check, mark as open
         }
 
+      } else if (q.type === "matching") {
+        const selectedIndexes = [];
+        for (let i = 0; i < (q.left || []).length; i++) {
+          const select = document.getElementById(`match_${i}`);
+          if (!select || select.value === "") {
+            feedbackDiv.innerHTML = '<div class="practice-feedback wrong">вљ  Р‘Р°СЂР»С‹Т› Р¶Т±РїС‚С‹ С‚Р°ТЈРґР°ТЈС‹Р·!</div>';
+            return;
+          }
+          selectedIndexes.push(parseInt(select.value, 10));
+        }
+        userAnswer = selectedIndexes.map(i => q.right[i]).join(" | ");
+        correct = Array.isArray(q.answer)
+          && q.answer.length === selectedIndexes.length
+          && q.answer.every((rightIdx, idx) => Number(rightIdx) === selectedIndexes[idx]);
+
+      } else if (q.type === "order_lines") {
+        const orderInput = document.getElementById("orderAnswer");
+        if (!orderInput || !orderInput.value.trim()) {
+          feedbackDiv.innerHTML = '<div class="practice-feedback wrong">вљ  Р РµС‚С–РЅ Р¶Р°Р·С‹ТЈС‹Р·!</div>';
+          return;
+        }
+        const userOrder = orderInput.value
+          .split(/[,\s]+/)
+          .map(v => parseInt(v, 10))
+          .filter(v => !Number.isNaN(v))
+          .map(v => v - 1);
+        userAnswer = userOrder.map(v => v + 1).join(", ");
+        correct = Array.isArray(q.answer)
+          && q.answer.length === userOrder.length
+          && q.answer.every((lineIdx, idx) => Number(lineIdx) === userOrder[idx]);
+
+      } else if (q.type === "find_error" || q.type === "predict_output") {
+        const interactiveInput = document.getElementById("interactiveAnswer");
+        if (!interactiveInput || !interactiveInput.value.trim()) {
+          feedbackDiv.innerHTML = '<div class="practice-feedback wrong">вљ  Р–Р°СѓР°РїС‚С‹ Р¶Р°Р·С‹ТЈС‹Р·!</div>';
+          return;
+        }
+        userAnswer = interactiveInput.value.trim();
+        const correctArr = q.answer || q.correct || [];
+        if (Array.isArray(correctArr)) {
+          correct = correctArr.some(ans => normalizeAnswer(userAnswer) === normalizeAnswer(String(ans)));
+        } else if (typeof correctArr === "string") {
+          correct = normalizeAnswer(userAnswer) === normalizeAnswer(correctArr);
+        } else {
+          correct = null;
+        }
+
       } else {
         // Theory / open question
         const theoryInput = document.getElementById("theoryAnswer");
         if (!theoryInput || !theoryInput.value.trim()) {
-          feedbackDiv.innerHTML = '<div class="practice-feedback wrong">⚠ Жауапты жазыңыз!</div>';
+          feedbackDiv.innerHTML = '<div class="practice-feedback wrong">вљ  Р–Р°СѓР°РїС‚С‹ Р¶Р°Р·С‹ТЈС‹Р·!</div>';
           return;
         }
         userAnswer = theoryInput.value.trim();
@@ -276,12 +379,12 @@
   if (correct === true) {
 
     let explanation = q.explanation
-      ? `<br><b>Түсіндірме:</b> ${q.explanation}`
+      ? `<br><b>РўТЇСЃС–РЅРґС–СЂРјРµ:</b> ${q.explanation}`
       : "";
 
     feedbackDiv.innerHTML =
       `<div class="practice-feedback correct">
-        ✅ Дұрыс жауап!
+        вњ… Р”Т±СЂС‹СЃ Р¶Р°СѓР°Рї!
         ${explanation}
       </div>`;
 
@@ -298,7 +401,7 @@
       correctText = q.options[ci - 1] || q.options[ci] || '';
 
       if (correctText) {
-        hint = ` Дұрыс жауап: ${correctText}`;
+        hint = ` Р”Т±СЂС‹СЃ Р¶Р°СѓР°Рї: ${correctText}`;
       }
 
     } else if ((q.type === "code" || q.type === "code_fill") && (q.answer || q.correct)) {
@@ -309,23 +412,23 @@
         ? arr.join(", ")
         : arr;
 
-      hint = ` Дұрыс жауап: ${correctText}`;
+      hint = ` Р”Т±СЂС‹СЃ Р¶Р°СѓР°Рї: ${correctText}`;
     }
 
     let explanation = q.explanation
-      ? `<br><b>Түсіндірме:</b> ${q.explanation}`
+      ? `<br><b>РўТЇСЃС–РЅРґС–СЂРјРµ:</b> ${q.explanation}`
       : "";
 
     feedbackDiv.innerHTML =
       `<div class="practice-feedback wrong">
-        ❌ Дұрыс емес.${hint}
+        вќЊ Р”Т±СЂС‹СЃ РµРјРµСЃ.${hint}
         ${explanation}
       </div>`;
 
   } else {
 
     feedbackDiv.innerHTML =
-      '<div class="practice-feedback neutral">📝 Жауап сақталды. Мұғалім тексереді.</div>';
+      '<div class="practice-feedback neutral">рџ“ќ Р–Р°СѓР°Рї СЃР°Т›С‚Р°Р»РґС‹. РњТ±Т“Р°Р»С–Рј С‚РµРєСЃРµСЂРµРґС–.</div>';
   }
 
       // Disable button to prevent double-click, advance after delay
@@ -338,44 +441,49 @@
     function showSummary() {
       answerSection.style.display = "none";
 
-      const autoCount = questions.filter(q => q.type === "test" || q.type === "code" || q.type === "code_fill").length;
+      const autoTypes = ["test", "code", "code_fill", "matching", "order_lines", "find_error", "predict_output"];
+      const autoCount = questions.filter(q => autoTypes.includes(q.type)).length;
       
       let html = `
         <div class="practice-summary">
-          <h2>🎉 Барлық тапсырмалар орындалды!</h2>
+          <h2>рџЋ‰ Р‘Р°СЂР»С‹Т› С‚Р°РїСЃС‹СЂРјР°Р»Р°СЂ РѕСЂС‹РЅРґР°Р»РґС‹!</h2>
           <p style="font-size: 16px; color: var(--text-muted);">
-            Автоматты тексерілген сұрақтар: <strong style="color: var(--accent);">${correctCount} / ${autoCount}</strong>.
-            Ашық сұрақтарға баға қойылмайды.
+            РђРІС‚РѕРјР°С‚С‚С‹ С‚РµРєСЃРµСЂС–Р»РіРµРЅ СЃТ±СЂР°Т›С‚Р°СЂ: <strong style="color: var(--accent);">${correctCount} / ${autoCount}</strong>.
+            РђС€С‹Т› СЃТ±СЂР°Т›С‚Р°СЂТ“Р° Р±Р°Т“Р° Т›РѕР№С‹Р»РјР°Р№РґС‹.
           </p>
       `;
 
       questions.forEach((q, idx) => {
-        let uAns = userAnswers[idx] || "Жауап берілмеді";
+        let uAns = userAnswers[idx] || "Р–Р°СѓР°Рї Р±РµСЂС–Р»РјРµРґС–";
         let corrText = "";
 
         if (q.type === "test" && Array.isArray(q.options)) {
           const ci = q.correct;
           corrText = q.options[ci - 1] || q.options[ci] || String(ci);
-        } else if (q.type === "code" || q.type === "code_fill") {
+        } else if (q.type === "code" || q.type === "code_fill" || q.type === "find_error" || q.type === "predict_output") {
           const ansArray = q.answer || q.correct;
           corrText = Array.isArray(ansArray) ? ansArray.join(", ") : String(ansArray || "");
+        } else if (q.type === "matching" && Array.isArray(q.answer) && Array.isArray(q.right)) {
+          corrText = q.answer.map(idx => q.right[idx]).join(" | ");
+        } else if (q.type === "order_lines" && Array.isArray(q.answer)) {
+          corrText = q.answer.map(idx => Number(idx) + 1).join(", ");
         }
 
         html += `<div class="practice-summary-item">
           <strong>${idx + 1}. ${q.question}</strong>
-          <div class="user-answer">Сіздің жауабыңыз: ${escapeHtml(String(uAns))}</div>`;
+          <div class="user-answer">РЎС–Р·РґС–ТЈ Р¶Р°СѓР°Р±С‹ТЈС‹Р·: ${escapeHtml(String(uAns))}</div>`;
         
-        if (q.type === "test" || q.type === "code" || q.type === "code_fill") {
-          html += `<div class="correct-answer">✓ Дұрыс жауап: ${escapeHtml(corrText)}</div>`;
+        if (autoTypes.includes(q.type)) {
+          html += `<div class="correct-answer">вњ“ Р”Т±СЂС‹СЃ Р¶Р°СѓР°Рї: ${escapeHtml(corrText)}</div>`;
         } else {
-          html += `<div class="open-answer">📝 Ашық сұрақ (мұғалім тексереді)</div>`;
+          html += `<div class="open-answer">рџ“ќ РђС€С‹Т› СЃТ±СЂР°Т› (РјТ±Т“Р°Р»С–Рј С‚РµРєСЃРµСЂРµРґС–)</div>`;
         }
         html += '</div>';
       });
 
       html += `
         <div style="margin-top: 20px;">
-          <button onclick="window.location.href='materials.html'">📚 Материалдарға қайту</button>
+          <button onclick="window.location.href='materials.html'">рџ“љ РњР°С‚РµСЂРёР°Р»РґР°СЂТ“Р° Т›Р°Р№С‚Сѓ</button>
         </div>
         </div>
       `;
@@ -391,7 +499,7 @@
     async function saveQuizSummary() {
       const answersArray = questions.map((q, idx) => ({
         question: q.question,
-        answer: userAnswers[idx] || "Жауап жоқ",
+        answer: userAnswers[idx] || "Р–Р°СѓР°Рї Р¶РѕТ›",
         correct: q.correct || q.answer || "N/A",
         type: q.type
       }));
@@ -419,6 +527,14 @@
       const div = document.createElement("div");
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    function normalizeAnswer(text) {
+      return String(text || "")
+        .trim()
+        .replace(/\r\n/g, "\n")
+        .replace(/[ \t]+/g, " ")
+        .toLowerCase();
     }
 
     loadTasks();

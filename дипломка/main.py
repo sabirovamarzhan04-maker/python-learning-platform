@@ -133,6 +133,8 @@ app.add_middleware(
 # -----------------------------------------
 class TaskRequest(BaseModel):
     topic: str
+    username: str | None = None
+    email: str | None = None
 
 class CheckRequest(BaseModel):
     username: str
@@ -1142,6 +1144,8 @@ def save_quiz_result(req: TopicQuizSubmit):
     ).first()
 
     if quiz:
+        quiz.correct = req.correct
+        quiz.total = req.total
         if req.answers:
             quiz.answers = req.answers
     else:
@@ -1295,7 +1299,335 @@ def get_lecture_text(topic_id: str) -> str:
         print("Error reading docx:", e)
         return ""
 
+def get_student_level(username: str | None, email: str | None) -> dict:
+    if not username or not email:
+        return {"level": "beginner", "percent": None}
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.username == username, User.email == email).first()
+        if not user:
+            return {"level": "beginner", "percent": None}
+
+        percents = []
+        for result in user.quiz_results:
+            if result.total and result.total > 0:
+                auto_percent = (result.correct / result.total) * 100
+                teacher_percent = result.teacher_grade * 10 if result.teacher_grade is not None else None
+                percents.append(teacher_percent if teacher_percent is not None else auto_percent)
+
+        if not percents:
+            return {"level": "beginner", "percent": None}
+
+        avg_percent = sum(percents) / len(percents)
+        if avg_percent >= 80:
+            level = "advanced"
+        elif avg_percent >= 55:
+            level = "middle"
+        else:
+            level = "beginner"
+        return {"level": level, "percent": round(avg_percent, 1)}
+    finally:
+        db.close()
+
+
+def build_interactive_task_prompt(topic: str, internal_topic: str, lecture_content: str, student_level: dict) -> str:
+    level = student_level.get("level", "beginner")
+    difficulty_rules = {
+        "beginner": "Оңай деңгей: таныс синтаксис, 1 цикл немесе 1 шарт, қысқа код, бір нақты ой.",
+        "middle": "Орта деңгей: 2-3 қадамдық логика, тізім/цикл/шарт бірге қолданылуы мүмкін.",
+        "advanced": "Күрделі деңгей: бірнеше қадам, функция, тізім өңдеу, қате талдау немесе output болжау.",
+    }
+    lecture_block = ""
+    if lecture_content:
+        lecture_block = f"\nЛекция материалы. Тек осы материал мен тақырыпқа сүйен:\n---\n{lecture_content}\n---\n"
+
+    return f"""
+Сен Python пәнінен тәжірибелі қазақ тілді мұғалімсің.
+Мақсат: тест пен ашық сұрақ емес, оқушы әрекет жасайтын интерактивті практикалық тапсырмалар құрастыру.
+
+Тақырып ID: {topic}
+Тақырып атауы: {internal_topic}
+Оқушы деңгейі: {level}
+Деңгей ережесі: {difficulty_rules.get(level, difficulty_rules["beginner"])}
+{lecture_block}
+
+Тек JSON қайтар. Markdown, түсіндірме мәтін, ``` қолданба.
+Жауап дәл мына құрылымда болсын: {{"questions":[...]}}
+
+Қатаң формат:
+- Дәл 10 тапсырма болсын.
+- test, theory, open_question типтерін мүлде қолданба.
+- Барлық мәтін қазақ тілінде болсын.
+- Әр тапсырма берілген тақырыпқа тікелей қатысты болсын.
+- Бірдей шаблонды қайталама: тапсырмалар әртүрлі ойлау әрекетін талап етсін.
+- Әр тапсырмада explanation міндетті түрде болсын.
+- Әр тапсырмада difficulty: "beginner", "middle" немесе "advanced" болсын.
+
+Міндетті тапсырма құрамы:
+- 1-2: matching
+- 3-5: code_fill
+- 6-7: order_lines
+- 8: find_error
+- 9-10: predict_output немесе find_error
+
+matching форматы:
+{{
+  "type":"matching",
+  "difficulty":"{level}",
+  "question":"Сәйкестендіріңіз: ...",
+  "left":["Python ұғымы 1","Python ұғымы 2","Python ұғымы 3","Python ұғымы 4"],
+  "right":["Түсіндірме A","Түсіндірме B","Түсіндірме C","Түсіндірме D"],
+  "answer":[0,2,1,3],
+  "explanation":"Неге осылай сәйкестенеді"
+}}
+answer массиві left индексі бойынша дұрыс right индексін көрсетеді. right реті аралас болсын.
+
+code_fill форматы:
+{{
+  "type":"code_fill",
+  "difficulty":"{level}",
+  "question":"Код дұрыс жұмыс істеуі үшін ______ орнына бір сөз немесе бір оператор жазыңыз.",
+  "template":"5-10 жолдық толық Python коды, ішінде тек бір ______ болсын",
+  "expected_output":"экранда шығатын нақты нәтиже",
+  "answer":["бір ғана дұрыс сөз немесе оператор"],
+  "explanation":"Неге осы жауап дұрыс"
+}}
+
+order_lines форматы:
+{{
+  "type":"order_lines",
+  "difficulty":"{level}",
+  "question":"Код дұрыс орындалуы үшін жолдарды дұрыс ретке қойыңыз.",
+  "lines":["араласқан жол 1","араласқан жол 2","араласқан жол 3","араласқан жол 4","араласқан жол 5"],
+  "answer":[2,0,4,1,3],
+  "expected_output":"экранда шығатын нақты нәтиже",
+  "explanation":"Неге осы рет дұрыс"
+}}
+answer массиві lines ішіндегі индекстердің дұрыс орындалу ретін көрсетеді.
+
+find_error форматы:
+{{
+  "type":"find_error",
+  "difficulty":"{level}",
+  "question":"Кодтағы қатені табыңыз және дұрыс жолды жазыңыз.",
+  "template":"5-10 жолдық Python коды, ішінде бір ғана синтаксистік немесе логикалық қате болсын",
+  "answer":["қате жолдың дұрыс нұсқасы"],
+  "expected_output":"қате түзелгеннен кейін шығатын нәтиже",
+  "explanation":"Қате неде және неге осылай түзетіледі"
+}}
+
+predict_output форматы:
+{{
+  "type":"predict_output",
+  "difficulty":"{level}",
+  "question":"Код орындалғанда экранға не шығады?",
+  "template":"5-10 жолдық толық Python коды",
+  "answer":["нақты output"],
+  "expected_output":"нақты output",
+  "explanation":"Нәтиже қалай шықты"
+}}
+
+Сапа ережелері:
+- Python синтаксисі дұрыс болсын.
+- Кодтар оқушыға түсінікті, бірақ тым қарапайым емес болсын.
+- Айнымалы аттары мағыналы болсын: numbers, total, name, scores, matrix, text.
+- Тақырып цикл болса: for/while/range/break/continue бойынша нақты код бер.
+- Тақырып тізім/массив болса: индекстер, append, len, циклмен өңдеу, сұрыптау қолдан.
+- Тақырып функция болса: def, параметр, return, шақыру қолдан.
+- Тақырып сөздік/кортеж/жол болса: дәл сол құрылымға арналған операциялар қолдан.
+- Жауаптар автоматты тексеруге ыңғайлы қысқа және нақты болсын.
+"""
+
+
+def normalize_interactive_questions(raw_questions: list) -> list:
+    required_order = [
+        "matching", "matching",
+        "code_fill", "code_fill", "code_fill",
+        "order_lines", "order_lines",
+        "find_error",
+        None, None,
+    ]
+    clean_questions = []
+
+    for idx, q in enumerate(raw_questions[:10]):
+        if not isinstance(q, dict):
+            raise ValueError("question is not object")
+
+        q_type = q.get("type")
+        expected_type = required_order[idx]
+        if expected_type and q_type != expected_type:
+            raise ValueError(f"question {idx + 1} must be {expected_type}")
+        if expected_type is None and q_type not in {"find_error", "predict_output"}:
+            raise ValueError(f"question {idx + 1} must be find_error or predict_output")
+        if q_type in {"test", "theory", "open_question"}:
+            raise ValueError("old question type is not allowed")
+        if not q.get("question") or not q.get("explanation"):
+            raise ValueError("question and explanation are required")
+
+        if q_type == "matching":
+            if not all(isinstance(q.get(key), list) for key in ("left", "right", "answer")):
+                raise ValueError("matching fields are invalid")
+            if len(q["left"]) < 3 or len(q["left"]) != len(q["right"]) or len(q["answer"]) != len(q["left"]):
+                raise ValueError("matching lengths are invalid")
+        elif q_type == "order_lines":
+            if not isinstance(q.get("lines"), list) or not isinstance(q.get("answer"), list):
+                raise ValueError("order_lines fields are invalid")
+            if len(q["lines"]) < 4 or len(q["answer"]) != len(q["lines"]):
+                raise ValueError("order_lines length is invalid")
+            if sorted(q["answer"]) != list(range(len(q["lines"]))):
+                raise ValueError("order_lines answer must contain all indexes")
+        else:
+            answers = q.get("answer")
+            if not q.get("template") or not isinstance(answers, list) or not answers:
+                raise ValueError(f"{q_type} template and answer are required")
+            if q_type == "code_fill" and str(q.get("template", "")).count("______") != 1:
+                raise ValueError("code_fill must contain exactly one blank")
+
+        q.setdefault("difficulty", "beginner")
+        clean_questions.append(q)
+
+    if len(clean_questions) != 10:
+        raise ValueError("exactly 10 questions are required")
+    return clean_questions
+
+
+def build_interactive_fallback(topic: str, internal_topic: str, level: str) -> list:
+    title = internal_topic or topic
+    return [
+        {
+            "type": "matching",
+            "difficulty": level,
+            "question": f"{title} тақырыбы бойынша ұғымдарды мағынасымен сәйкестендіріңіз.",
+            "left": ["print()", "айнымалы", "input()", "int"],
+            "right": ["Бүтін сан типі", "Экранға нәтиже шығарады", "Пернетақтадан мән оқиды", "Мән сақтайтын атау"],
+            "answer": [1, 3, 2, 0],
+            "explanation": "Әр ұғым Python кодында нақты қызмет атқарады: шығару, сақтау, енгізу және типке айналдыру.",
+        },
+        {
+            "type": "matching",
+            "difficulty": level,
+            "question": f"{title} тақырыбындағы код бөліктерін қызметімен сәйкестендіріңіз.",
+            "left": ["for", "if", "range()", "len()"],
+            "right": ["Ұзындықты анықтайды", "Қайталау жасайды", "Шартты тексереді", "Сандар тізбегін құрады"],
+            "answer": [1, 2, 3, 0],
+            "explanation": "Бұл құралдар Python-да алгоритм құрудың негізгі бөліктері ретінде бірге жиі қолданылады.",
+        },
+        {
+            "type": "code_fill",
+            "difficulty": level,
+            "question": "Код 1-ден 5-ке дейінгі сандарды шығару үшін бос орынды толтырыңыз.",
+            "template": "start = 1\nfinish = 5\n\nfor number in range(start, finish + 1):\n    ______(number)",
+            "expected_output": "1\n2\n3\n4\n5",
+            "answer": ["print"],
+            "explanation": "print() функциясы әр number мәнін экранға шығарады.",
+        },
+        {
+            "type": "code_fill",
+            "difficulty": level,
+            "question": "Қосынды дұрыс есептелуі үшін бос орынды толтырыңыз.",
+            "template": "numbers = [2, 4, 6]\ntotal = 0\n\nfor number in numbers:\n    total = total + ______\n\nprint(total)",
+            "expected_output": "12",
+            "answer": ["number"],
+            "explanation": "Цикл әр айналымда ағымдағы number мәнін total айнымалысына қосады.",
+        },
+        {
+            "type": "code_fill",
+            "difficulty": level,
+            "question": "Шарт тек жұп сандарды шығару үшін бос орынды толтырыңыз.",
+            "template": "numbers = [1, 2, 3, 4, 5, 6]\n\nfor number in numbers:\n    if number % 2 ______ 0:\n        print(number)",
+            "expected_output": "2\n4\n6",
+            "answer": ["=="],
+            "explanation": "== операторы қалдықтың 0-ге тең екенін тексереді.",
+        },
+        {
+            "type": "order_lines",
+            "difficulty": level,
+            "question": "Код жолдарын дұрыс ретке қойыңыз.",
+            "lines": ["print(total)", "for number in numbers:", "numbers = [3, 5, 7]", "    total += number", "total = 0"],
+            "answer": [2, 4, 1, 3, 0],
+            "expected_output": "15",
+            "explanation": "Алдымен тізім мен total дайындалады, содан кейін цикл қосындыны есептеп, соңында нәтиже шығарылады.",
+        },
+        {
+            "type": "order_lines",
+            "difficulty": level,
+            "question": "Шартпен жұмыс істейтін кодты дұрыс ретке қойыңыз.",
+            "lines": ["    print('үлкен')", "value = 8", "else:", "if value > 5:", "    print('кіші немесе тең')"],
+            "answer": [1, 3, 0, 2, 4],
+            "expected_output": "үлкен",
+            "explanation": "Алдымен value беріледі, кейін if шарты тексеріледі, else блогы соңынан жазылады.",
+        },
+        {
+            "type": "find_error",
+            "difficulty": level,
+            "question": "Кодтағы қатені табыңыз және дұрыс жолды жазыңыз.",
+            "template": "scores = [80, 90, 75]\ntotal = 0\n\nfor score in scores\n    total += score\n\nprint(total)",
+            "answer": ["for score in scores:"],
+            "expected_output": "245",
+            "explanation": "for жолының соңында қос нүкте болуы керек, өйткені одан кейін цикл блогы басталады.",
+        },
+        {
+            "type": "predict_output",
+            "difficulty": level,
+            "question": "Код орындалғанда экранға не шығады?",
+            "template": "items = ['a', 'b', 'c']\ncount = 0\n\nfor item in items:\n    count += 1\n\nprint(count)",
+            "answer": ["3"],
+            "expected_output": "3",
+            "explanation": "Тізімде үш элемент бар, цикл үш рет орындалып count мәні 3 болады.",
+        },
+        {
+            "type": "predict_output",
+            "difficulty": level,
+            "question": "Код орындалғанда экранға не шығады?",
+            "template": "numbers = [1, 2, 3, 4]\nresult = []\n\nfor number in numbers:\n    if number > 2:\n        result.append(number)\n\nprint(result)",
+            "answer": ["[3, 4]"],
+            "expected_output": "[3, 4]",
+            "explanation": "Шарттан тек 3 және 4 өтеді, сондықтан result тізіміне осы мәндер қосылады.",
+        },
+    ]
+
+
 @app.post("/generate_tasks/")
+def generate_interactive_tasks(req: TaskRequest):
+    topic = req.topic
+    internal_topic = QUIZ_MAPPING.get(topic, topic)
+    lecture_content = get_lecture_text(topic)
+    student_level = get_student_level(req.username, req.email)
+    context_msg = build_interactive_task_prompt(topic, internal_topic, lecture_content, student_level)
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": context_msg},
+                {
+                    "role": "user",
+                    "content": (
+                        f"{internal_topic} ({topic}) тақырыбы бойынша дәл 10 интерактивті тапсырма дайында. "
+                        "Тест және ашық сұрақ қоспа. Ретті қатаң сақта."
+                    ),
+                },
+            ],
+            max_tokens=4500,
+            temperature=0.55,
+        )
+        parsed_json = json.loads(response.choices[0].message.content)
+        questions = normalize_interactive_questions(parsed_json.get("questions", []))
+        return {
+            "topic": topic,
+            "level": student_level["level"],
+            "student_percent": student_level["percent"],
+            "questions": questions,
+        }
+    except Exception as e:
+        print(f"[generate_tasks] GPT error for topic={topic}: {e}")
+        fallback = build_interactive_fallback(topic, internal_topic, student_level["level"])
+        return {"topic": topic, "level": student_level["level"], "questions": fallback}
+
+
+@app.post("/generate_tasks_legacy/")
 def generate_tasks(req: TaskRequest):
     topic = req.topic
     #if topic in QUIZZES:
