@@ -449,8 +449,8 @@
           <h2>🎉 Барлық тапсырмалар орындалды!</h2>
           <p style="font-size: 16px; color: var(--text-muted);">
             Автоматты тексерілген сұрақтар: <strong style="color: var(--accent);">${correctCount} / ${autoCount}</strong>.
-            Ашық сұрақтарға баға қойылмайды.
           </p>
+          <h3 style="margin-top: 18px;">Дұрыс жауаптар</h3>
       `;
 
       questions.forEach((q, idx) => {
@@ -475,6 +475,9 @@
         
         if (autoTypes.includes(q.type)) {
           html += `<div class="correct-answer">✓ Дұрыс жауап: ${escapeHtml(corrText)}</div>`;
+          if (q.explanation) {
+            html += `<div class="practice-explanation"><b>Түсіндірме:</b> ${escapeHtml(q.explanation)}</div>`;
+          }
         } else {
           html += `<div class="open-answer">📝 Ашық сұрақ (мұғалім тексереді)</div>`;
         }

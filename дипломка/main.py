@@ -1363,6 +1363,13 @@ def build_interactive_task_prompt(topic: str, internal_topic: str, lecture_conte
 - Бірдей шаблонды қайталама: тапсырмалар әртүрлі ойлау әрекетін талап етсін.
 - Әр тапсырмада explanation міндетті түрде болсын.
 - Әр тапсырмада difficulty: "beginner", "middle" немесе "advanced" болсын.
+- Тапсырма логикасы өмірдегі Python сабағына ұқсасын: оқушы нақты кодты түсініп, реттеп, толықтырып немесе нәтижесін болжауы керек.
+- matching тапсырмаларында сол жақ пен оң жақ бір-біріне нақты сәйкес болсын; анық емес, тым жалпы, екіұшты жұптар жасама.
+- right массивіндегі жауаптар бір-біріне тым ұқсас болмасын және бір дұрыс жауап екі рет қайталанбасын.
+- code_fill тапсырмасында template ішінде дәл бір ғана ______ болсын; answer сол бос орынға ғана жазылатын қысқа жауап болсын.
+- expected_output кодпен нақты сәйкес болсын. Егер output-ты есептеу қиын болса, тапсырманы жеңілдет.
+- 1.1.1 сияқты кіріспе тақырыпта күрделі алгоритм, рекурсия, NumPy, файлдар, class қолданба.
+- Сұрақ сөйлемі оқушыға не істеу керек екенін анық айтсын.
 
 Міндетті тапсырма құрамы:
 - 1-2: matching
@@ -1437,6 +1444,8 @@ predict_output форматы:
 - Тақырып функция болса: def, параметр, return, шақыру қолдан.
 - Тақырып сөздік/кортеж/жол болса: дәл сол құрылымға арналған операциялар қолдан.
 - Жауаптар автоматты тексеруге ыңғайлы қысқа және нақты болсын.
+- Мағынасыз сәйкестендіру жасама: "Python -> PyCharm" сияқты жұпты тек орта/IDE тақырыбы болса ғана қолдан.
+- Әр code/order/output тапсырмада код 5-10 жол болсын және бір ғана негізгі идеяны тексерсін.
 """
 
 
@@ -1622,6 +1631,7 @@ def generate_interactive_tasks(req: TaskRequest):
     lecture_content = get_lecture_text(topic)
     student_level = get_student_level(req.username, req.email)
     context_msg = build_interactive_task_prompt(topic, internal_topic, lecture_content, student_level)
+    fallback_questions = build_interactive_fallback(topic, internal_topic, student_level["level"])
 
     user_prompt = (
         f"{internal_topic} ({topic}) тақырыбы бойынша дәл 10 интерактивті тапсырма дайында. "
@@ -1651,12 +1661,12 @@ def generate_interactive_tasks(req: TaskRequest):
                     {"role": "user", "content": current_prompt},
                 ],
                 max_tokens=3200,
-                temperature=0.55,
+                temperature=0.35,
             )
             last_text = response.choices[0].message.content
             try:
                 parsed_json = json.loads(last_text)
-                questions = normalize_interactive_questions(parsed_json.get("questions", []))
+                questions = complete_interactive_questions(parsed_json.get("questions", []), fallback_questions)
                 break
             except Exception as validation_error:
                 last_error = validation_error
@@ -1671,8 +1681,7 @@ def generate_interactive_tasks(req: TaskRequest):
         }
     except Exception as e:
         print(f"[generate_tasks] GPT error for topic={topic}: {e}")
-        fallback = build_interactive_fallback(topic, internal_topic, student_level["level"])
-        return {"topic": topic, "level": student_level["level"], "questions": fallback}
+        return {"topic": topic, "level": student_level["level"], "questions": fallback_questions}
 
 
 @app.post("/generate_tasks_legacy/")
