@@ -1440,65 +1440,83 @@ predict_output форматы:
 """
 
 
+REQUIRED_INTERACTIVE_ORDER = [
+    "matching", "matching",
+    "code_fill", "code_fill", "code_fill",
+    "order_lines", "order_lines",
+    "find_error",
+    None, None,
+]
+
+
+def validate_interactive_question(q: dict, idx: int) -> dict:
+    if not isinstance(q, dict):
+        raise ValueError("question is not object")
+
+    q_type = q.get("type")
+    expected_type = REQUIRED_INTERACTIVE_ORDER[idx]
+    if expected_type and q_type != expected_type:
+        raise ValueError(f"question {idx + 1} must be {expected_type}")
+    if expected_type is None and q_type not in {"find_error", "predict_output"}:
+        raise ValueError(f"question {idx + 1} must be find_error or predict_output")
+    if q_type in {"test", "theory", "open_question"}:
+        raise ValueError("old question type is not allowed")
+    if not q.get("question") or not q.get("explanation"):
+        raise ValueError("question and explanation are required")
+
+    if q_type == "matching":
+        if not all(isinstance(q.get(key), list) for key in ("left", "right", "answer")):
+            raise ValueError("matching fields are invalid")
+        if len(q["left"]) < 3 or len(q["left"]) != len(q["right"]) or len(q["answer"]) != len(q["left"]):
+            raise ValueError("matching lengths are invalid")
+    elif q_type == "order_lines":
+        if not isinstance(q.get("lines"), list) or not isinstance(q.get("answer"), list):
+            raise ValueError("order_lines fields are invalid")
+        if len(q["lines"]) < 4 or len(q["answer"]) != len(q["lines"]):
+            raise ValueError("order_lines length is invalid")
+        if sorted(q["answer"]) != list(range(len(q["lines"]))):
+            raise ValueError("order_lines answer must contain all indexes")
+    else:
+        answers = q.get("answer")
+        if not q.get("template") or not isinstance(answers, list) or not answers:
+            raise ValueError(f"{q_type} template and answer are required")
+        if q_type == "code_fill":
+            template = str(q.get("template", ""))
+            blank_count = template.count("______")
+            if blank_count == 0:
+                answer_text = str(answers[0])
+                if answer_text and answer_text in template:
+                    q["template"] = template.replace(answer_text, "______", 1)
+                else:
+                    raise ValueError("code_fill must contain exactly one blank")
+            elif blank_count > 1:
+                raise ValueError("code_fill must contain exactly one blank")
+
+    q.setdefault("difficulty", "beginner")
+    return q
+
+
 def normalize_interactive_questions(raw_questions: list) -> list:
-    required_order = [
-        "matching", "matching",
-        "code_fill", "code_fill", "code_fill",
-        "order_lines", "order_lines",
-        "find_error",
-        None, None,
-    ]
     clean_questions = []
 
     for idx, q in enumerate(raw_questions[:10]):
-        if not isinstance(q, dict):
-            raise ValueError("question is not object")
+        clean_questions.append(validate_interactive_question(q, idx))
 
-        q_type = q.get("type")
-        expected_type = required_order[idx]
-        if expected_type and q_type != expected_type:
-            raise ValueError(f"question {idx + 1} must be {expected_type}")
-        if expected_type is None and q_type not in {"find_error", "predict_output"}:
-            raise ValueError(f"question {idx + 1} must be find_error or predict_output")
-        if q_type in {"test", "theory", "open_question"}:
-            raise ValueError("old question type is not allowed")
-        if not q.get("question") or not q.get("explanation"):
-            raise ValueError("question and explanation are required")
-
-        if q_type == "matching":
-            if not all(isinstance(q.get(key), list) for key in ("left", "right", "answer")):
-                raise ValueError("matching fields are invalid")
-            if len(q["left"]) < 3 or len(q["left"]) != len(q["right"]) or len(q["answer"]) != len(q["left"]):
-                raise ValueError("matching lengths are invalid")
-        elif q_type == "order_lines":
-            if not isinstance(q.get("lines"), list) or not isinstance(q.get("answer"), list):
-                raise ValueError("order_lines fields are invalid")
-            if len(q["lines"]) < 4 or len(q["answer"]) != len(q["lines"]):
-                raise ValueError("order_lines length is invalid")
-            if sorted(q["answer"]) != list(range(len(q["lines"]))):
-                raise ValueError("order_lines answer must contain all indexes")
-        else:
-            answers = q.get("answer")
-            if not q.get("template") or not isinstance(answers, list) or not answers:
-                raise ValueError(f"{q_type} template and answer are required")
-            if q_type == "code_fill":
-                template = str(q.get("template", ""))
-                blank_count = template.count("______")
-                if blank_count == 0:
-                    answer_text = str(answers[0])
-                    if answer_text and answer_text in template:
-                        q["template"] = template.replace(answer_text, "______", 1)
-                    else:
-                        raise ValueError("code_fill must contain exactly one blank")
-                elif blank_count > 1:
-                    raise ValueError("code_fill must contain exactly one blank")
-
-        q.setdefault("difficulty", "beginner")
-        clean_questions.append(q)
 
     if len(clean_questions) != 10:
         raise ValueError("exactly 10 questions are required")
     return clean_questions
+
+
+def complete_interactive_questions(raw_questions: list, fallback_questions: list) -> list:
+    completed = []
+    for idx in range(10):
+        candidate = raw_questions[idx] if idx < len(raw_questions) else None
+        try:
+            completed.append(validate_interactive_question(candidate, idx))
+        except Exception:
+            completed.append(validate_interactive_question(fallback_questions[idx], idx))
+    return completed
 
 
 def build_interactive_fallback(topic: str, internal_topic: str, level: str) -> list:
