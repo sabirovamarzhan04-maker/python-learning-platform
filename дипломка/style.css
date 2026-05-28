@@ -2072,3 +2072,14 @@ main.hero-background .lead{
 [data-theme="dark"] .event-form textarea::placeholder{
   color: rgba(30,41,59,0.55) !important;
 }
+/* LIGHT MODE HERO TEXT FIX */
+body:not([data-theme="dark"]) main.hero-background h2{
+  color: #1e293b !important;
+  text-shadow: 0 8px 25px rgba(255,255,255,0.85) !important;
+}
+
+body:not([data-theme="dark"]) main.hero-background .lead,
+body:not([data-theme="dark"]) #welcome{
+  color: #475569 !important;
+  text-shadow: 0 4px 18px rgba(255,255,255,0.9) !important;
+}
