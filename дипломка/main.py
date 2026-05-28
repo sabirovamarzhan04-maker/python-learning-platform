@@ -1610,7 +1610,7 @@ def generate_interactive_tasks(req: TaskRequest):
                     ),
                 },
             ],
-            max_tokens=4500,
+            max_tokens=3200,
             temperature=0.55,
         )
         parsed_json = json.loads(response.choices[0].message.content)
