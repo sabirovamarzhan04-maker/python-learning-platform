@@ -1481,8 +1481,17 @@ def normalize_interactive_questions(raw_questions: list) -> list:
             answers = q.get("answer")
             if not q.get("template") or not isinstance(answers, list) or not answers:
                 raise ValueError(f"{q_type} template and answer are required")
-            if q_type == "code_fill" and str(q.get("template", "")).count("______") != 1:
-                raise ValueError("code_fill must contain exactly one blank")
+            if q_type == "code_fill":
+                template = str(q.get("template", ""))
+                blank_count = template.count("______")
+                if blank_count == 0:
+                    answer_text = str(answers[0])
+                    if answer_text and answer_text in template:
+                        q["template"] = template.replace(answer_text, "______", 1)
+                    else:
+                        raise ValueError("code_fill must contain exactly one blank")
+                elif blank_count > 1:
+                    raise ValueError("code_fill must contain exactly one blank")
 
         q.setdefault("difficulty", "beginner")
         clean_questions.append(q)
@@ -1596,25 +1605,46 @@ def generate_interactive_tasks(req: TaskRequest):
     student_level = get_student_level(req.username, req.email)
     context_msg = build_interactive_task_prompt(topic, internal_topic, lecture_content, student_level)
 
+    user_prompt = (
+        f"{internal_topic} ({topic}) тақырыбы бойынша дәл 10 интерактивті тапсырма дайында. "
+        "Тест және ашық сұрақ қоспа. Ретті қатаң сақта."
+    )
+
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            response_format={"type": "json_object"},
-            messages=[
-                {"role": "system", "content": context_msg},
-                {
-                    "role": "user",
-                    "content": (
-                        f"{internal_topic} ({topic}) тақырыбы бойынша дәл 10 интерактивті тапсырма дайында. "
-                        "Тест және ашық сұрақ қоспа. Ретті қатаң сақта."
-                    ),
-                },
-            ],
-            max_tokens=3200,
-            temperature=0.55,
-        )
-        parsed_json = json.loads(response.choices[0].message.content)
-        questions = normalize_interactive_questions(parsed_json.get("questions", []))
+        last_error = None
+        last_text = ""
+        for attempt in range(2):
+            current_prompt = user_prompt
+            if attempt == 1:
+                current_prompt = (
+                    "Алдыңғы JSON қате болды. Оны толық қайта құрастыр.\n"
+                    f"Қате себебі: {last_error}\n"
+                    "Ең маңыздысы: code_fill тапсырмаларының template ішінде дәл бір ғана ______ болуы керек.\n"
+                    "matching/order_lines answer массивтері индекс ретінде берілсін.\n"
+                    "Тек дұрыс JSON қайтар: {\"questions\":[...]}\n"
+                    f"Алдыңғы жауап:\n{last_text[:2500]}"
+                )
+
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": context_msg},
+                    {"role": "user", "content": current_prompt},
+                ],
+                max_tokens=3200,
+                temperature=0.55,
+            )
+            last_text = response.choices[0].message.content
+            try:
+                parsed_json = json.loads(last_text)
+                questions = normalize_interactive_questions(parsed_json.get("questions", []))
+                break
+            except Exception as validation_error:
+                last_error = validation_error
+        else:
+            raise ValueError(f"invalid generated questions after retry: {last_error}")
+
         return {
             "topic": topic,
             "level": student_level["level"],
