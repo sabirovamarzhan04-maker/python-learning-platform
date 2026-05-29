@@ -2105,3 +2105,20 @@ html:not([data-theme="dark"]) #welcome{
   color: #bfdbfe !important;
   text-shadow: 0 8px 24px rgba(0,0,0,0.6) !important;
 }
+
+html[data-theme="dark"] body main.hero-background h2{
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  text-shadow: 0 3px 18px rgba(147,197,253,0.22), 0 14px 34px rgba(0,0,0,0.82) !important;
+}
+
+html[data-theme="dark"] body main.hero-background .lead{
+  color: #dbeafe !important;
+  -webkit-text-fill-color: #dbeafe !important;
+  text-shadow: 0 8px 24px rgba(0,0,0,0.68) !important;
+}
+
+html[data-theme="dark"] body #welcome{
+  color: #bfdbfe !important;
+  -webkit-text-fill-color: #bfdbfe !important;
+}
