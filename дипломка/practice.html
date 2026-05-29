@@ -92,7 +92,7 @@
       const done = await checkIfCompleted();
       if (done) return;
 
-      tasksDiv.innerHTML = `<div class="practice-question-card"><p>вЏі РР тапсырмаларды дайындап жатыр...</p></div>`;
+      tasksDiv.innerHTML = `<div class="practice-question-card"><p>ЖИ тапсырмаларды дайындап жатыр...</p></div>`;
 
       try {
         const res = await fetch(`${API}/generate_tasks/`, {

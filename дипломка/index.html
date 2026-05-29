@@ -37,10 +37,10 @@
   </header>
 
   <main class="hero-background">
-    <h2>Python-ды практика арқылы үйрен</h2>
-    <p class="lead">Қазақ тіліндегі дәрістер, тапсырмалар, мини-тесттер және онлайн компилятор — бәрі бір платформада.</p>
+    <h2>Python тілін қазақша меңгер</h2>
+    <p class="lead">Қысқа дәрістер, интерактивті тапсырмалар, мини-тесттер және онлайн компилятор - бәрі бір платформада.</p>
 
-    <div id="welcome" style="margin-top:18px;font-size:18px;color:#cfeff0"></div>
+    <div id="welcome"></div>
 
     <!-- Кнопка, которая появляется после входа — пользователь сам решает когда идти к материалам -->
     <section class="home-calendar">
@@ -144,9 +144,9 @@ function updateUI() {
   const role = localStorage.getItem('role') || 'student';
 
   if (user) {
-    const roleLabel = role === 'teacher' ? 'преподаватель' : 'ученик';
+    const roleLabel = role === 'teacher' ? 'мұғалім' : 'оқушы';
 
-    if (welcome) welcome.textContent = `Привет, ${user}! (${roleLabel})`;
+    if (welcome) welcome.textContent = `Сәлем, ${user}! (${roleLabel})`;
     if (authBtn) authBtn.style.display = 'none';
     if (profileWrapper) profileWrapper.style.display = 'flex';
 
@@ -163,7 +163,7 @@ function updateUI() {
   } else {
     if (welcome) welcome.textContent = '';
     if (authBtn) {
-      authBtn.textContent = 'Войти / Регистрация';
+      authBtn.textContent = 'Кіру / Тіркелу';
       authBtn.style.display = 'inline-block';
     }
     if (profileWrapper) profileWrapper.style.display = 'none';
